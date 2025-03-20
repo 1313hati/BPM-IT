@@ -75,11 +75,18 @@
             padding: 1.5rem;
             margin-bottom: 1.5rem;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
         }
 
         .card:hover {
             transform: translateY(-3px);
+            border-color: rgba(155, 77, 202, 0.3);
+        }
+        
+        .card.active {
+            border-color: var(--purple-primary);
+            box-shadow: 0 0 15px rgba(155, 77, 202, 0.3);
         }
 
         .card-title {
@@ -754,7 +761,7 @@
                     <span>Audio BPM Detection</span>
                 </div>
                 
-                <p>Analyze the BPM from your microphone input. This works best with clear beat patterns.</p>
+                <p>Analyze the BPM from your microphone input. Works with music playing through speakers, instruments, or any rhythmic sound.</p>
                 
                 <div class="visualizer-container">
                     <canvas id="audioVisualizer" class="visualizer-canvas"></canvas>
@@ -857,7 +864,7 @@
     </div>
 
     <footer>
-        BPM Detector - A tool for musicians | Made with ♥ by 13Hati
+        BPM Detector - A tool for musicians | Made with ♥
     </footer>
 
     <script>
@@ -865,6 +872,7 @@
             // ============= Tab System =============
             const tabs = document.querySelectorAll('.tab');
             const tabContents = document.querySelectorAll('.tab-content');
+            const cards = document.querySelectorAll('.card');
             
             tabs.forEach(tab => {
                 tab.addEventListener('click', () => {
@@ -873,10 +881,17 @@
                     // Remove active class from all tabs and contents
                     tabs.forEach(t => t.classList.remove('active'));
                     tabContents.forEach(c => c.classList.remove('active'));
+                    cards.forEach(c => c.classList.remove('active'));
                     
                     // Add active class to selected tab and content
                     tab.classList.add('active');
-                    document.getElementById(tabId + 'Tab').classList.add('active');
+                    const activeTabContent = document.getElementById(tabId + 'Tab'); 
+                    activeTabContent.classList.add('active');
+                    
+                    // Add active class to cards in the active tab
+                    activeTabContent.querySelectorAll('.card').forEach(card => {
+                        card.classList.add('active');
+                    });
                 });
             });
 
@@ -890,38 +905,210 @@
             let lastTapTime = 0;
             
             // Add both click and touch events for better mobile support
+            let tapBPMCalculator = {
+                taps: [],
+                lastTapTime: 0,
+                tapConfidence: 0,
+                bpmHistory: [],
+                steadinessScore: 0,
+                tapCount: 0
+            };
+            
+            // Visual feedback indicator for tap accuracy
+            const tapFeedbackEl = document.createElement('div');
+            tapFeedbackEl.className = 'tap-feedback';
+            tapFeedbackEl.innerHTML = '<div class="tap-accuracy"></div><div class="tap-steadiness-bar"></div>';
+            tapFeedbackEl.style.cssText = `
+                text-align: center;
+                margin: 8px 0;
+                font-size: 0.9rem;
+                color: var(--text-secondary);
+            `;
+            
+            document.querySelector('.bpm-counter').insertBefore(tapFeedbackEl, document.getElementById('resetButton').parentNode);
+            
+            const tapAccuracyEl = tapFeedbackEl.querySelector('.tap-accuracy');
+            const tapSteadinessBar = tapFeedbackEl.querySelector('.tap-steadiness-bar');
+            
+            tapSteadinessBar.style.cssText = `
+                height: 4px;
+                width: 0%;
+                background: linear-gradient(to right, var(--purple-secondary), var(--accent));
+                margin: 8px auto;
+                max-width: 200px;
+                border-radius: 2px;
+                transition: width 0.3s ease;
+            `;
+            
+            function updateTapFeedback(steadiness, message) {
+                tapSteadinessBar.style.width = (steadiness * 100) + '%';
+                tapAccuracyEl.textContent = message || (steadiness > 0.8 ? 'Great timing!' : 
+                                             steadiness > 0.6 ? 'Good rhythm' : 
+                                             steadiness > 0.4 ? 'Keep tapping...' : 'Tap steadily');
+            }
+            
             function handleTap() {
                 const currentTime = new Date().getTime();
+                tapBPMCalculator.tapCount++;
                 
-                if (lastTapTime !== 0) {
-                    const timeDiff = currentTime - lastTapTime;
-                    if (timeDiff > 3000) {
-                        // If more than 3 seconds have passed, reset
-                        taps = [];
-                    } else {
-                        taps.push(timeDiff);
-                        
-                        // Keep only the last 5 taps for more accurate current tempo
-                        if (taps.length > 5) {
-                            taps.shift();
+                // Handle first tap
+                if (tapBPMCalculator.lastTapTime === 0) {
+                    tapBPMCalculator.lastTapTime = currentTime;
+                    updateTapFeedback(0, 'Keep tapping...');
+                    tapButton.classList.add('active');
+                    setTimeout(() => tapButton.classList.remove('active'), 100);
+                    return;
+                }
+                
+                // Calculate this interval
+                const intervalMs = currentTime - tapBPMCalculator.lastTapTime;
+                tapBPMCalculator.lastTapTime = currentTime;
+                
+                // Reset if too long between taps
+                if (intervalMs > 3000) {
+                    tapBPMCalculator.taps = [];
+                    tapBPMCalculator.bpmHistory = [];
+                    tapBPMCalculator.steadinessScore = 0;
+                    updateTapFeedback(0, 'Starting new rhythm...');
+                    tapButton.classList.add('active');
+                    setTimeout(() => tapButton.classList.remove('active'), 100);
+                    return;
+                }
+                
+                // Add to tap history
+                tapBPMCalculator.taps.push({
+                    time: currentTime,
+                    interval: intervalMs
+                });
+                
+                // Keep only recent taps (last 10 seconds)
+                const oldestAllowedTime = currentTime - 10000;
+                tapBPMCalculator.taps = tapBPMCalculator.taps.filter(tap => tap.time >= oldestAllowedTime);
+                
+                // We need at least 3 taps to calculate a BPM
+                if (tapBPMCalculator.taps.length < 3) {
+                    updateTapFeedback(0.2, 'Keep tapping...');
+                    tapButton.classList.add('active');
+                    setTimeout(() => tapButton.classList.remove('active'), 100);
+                    return;
+                }
+                
+                // Extract just the intervals
+                const intervals = tapBPMCalculator.taps.map(tap => tap.interval);
+                
+                // Calculate statistics
+                intervals.sort((a, b) => a - b);
+                
+                // Remove extreme outliers (outside 1.5x IQR)
+                const q1Index = Math.floor(intervals.length * 0.25);
+                const q3Index = Math.floor(intervals.length * 0.75);
+                const q1 = intervals[q1Index];
+                const q3 = intervals[q3Index];
+                const iqr = q3 - q1;
+                const lowerBound = q1 - (iqr * 1.5);
+                const upperBound = q3 + (iqr * 1.5);
+                
+                const validIntervals = intervals.filter(int => int >= lowerBound && int <= upperBound);
+                
+                if (validIntervals.length < 2) {
+                    // Not enough valid intervals yet
+                    tapButton.classList.add('active');
+                    setTimeout(() => tapButton.classList.remove('active'), 100);
+                    return;
+                }
+                
+                // Calculate median (more stable than mean)
+                const medianInterval = validIntervals[Math.floor(validIntervals.length / 2)];
+                
+                // Convert to BPM 
+                const exactBpm = 60000 / medianInterval;
+                
+                // For steadiness calculation
+                const meanInterval = validIntervals.reduce((sum, val) => sum + val, 0) / validIntervals.length;
+                const intervalVariance = validIntervals.reduce((sum, val) => sum + Math.pow(val - meanInterval, 2), 0) / validIntervals.length;
+                const intervalStdDev = Math.sqrt(intervalVariance);
+                const coefficientOfVariation = intervalStdDev / meanInterval;
+                
+                // Calculate a steadiness score (lower coefficient of variation = more steady)
+                // Convert to a 0-1 scale where 1 is perfect steadiness
+                tapBPMCalculator.steadinessScore = Math.min(1, Math.max(0, 1 - (coefficientOfVariation * 5)));
+                
+                // Quantize BPM to common values if we're close
+                // This helps stabilize around common tempos
+                let roundedBpm;
+                if (tapBPMCalculator.steadinessScore > 0.5) {
+                    // More aggressive quantization for steady tapping
+                    // Round to nearest integer BPM
+                    roundedBpm = Math.round(exactBpm);
+                    
+                    // Try to quantize to common BPM values if we're close
+                    const commonBpms = [60, 70, 75, 80, 90, 100, 110, 120, 125, 128, 130, 140, 150, 160, 170, 180];
+                    for (const commonBpm of commonBpms) {
+                        if (Math.abs(exactBpm - commonBpm) < 2) {
+                            roundedBpm = commonBpm;
+                            break;
                         }
                     }
+                } else {
+                    // Less aggressive quantization for less steady tapping
+                    roundedBpm = Math.round(exactBpm);
                 }
                 
-                lastTapTime = currentTime;
+                // Add to BPM history for stability
+                tapBPMCalculator.bpmHistory.push(roundedBpm);
+                if (tapBPMCalculator.bpmHistory.length > 5) {
+                    tapBPMCalculator.bpmHistory.shift();
+                }
                 
-                if (taps.length > 0) {
-                    // Calculate average time between taps
-                    const averageTapTime = taps.reduce((sum, val) => sum + val, 0) / taps.length;
-                    // Convert to BPM (60000 ms in a minute)
-                    const bpm = Math.round(60000 / averageTapTime);
-                    
-                    // Validate BPM is within reasonable range
-                    if (bpm >= 30 && bpm <= 400) {
-                        bpmDisplay.textContent = bpm;
+                // Display the most common BPM from recent history
+                const bpmCounts = {};
+                let maxCount = 0;
+                let mostCommonBpm = roundedBpm;
+                
+                tapBPMCalculator.bpmHistory.forEach(bpm => {
+                    bpmCounts[bpm] = (bpmCounts[bpm] || 0) + 1;
+                    if (bpmCounts[bpm] > maxCount) {
+                        maxCount = bpmCounts[bpm];
+                        mostCommonBpm = bpm;
                     }
+                });
+                
+                // Validate BPM is within reasonable range
+                if (mostCommonBpm >= 30 && mostCommonBpm <= 300) {
+                    bpmDisplay.textContent = mostCommonBpm;
+                    
+                    // Update confidence display
+                    updateTapFeedback(tapBPMCalculator.steadinessScore);
                 }
+                
+                // Visual feedback on tap
+                tapButton.classList.add('active');
+                setTimeout(() => tapButton.classList.remove('active'), 100);
             }
+            
+            // Reset function
+            resetButton.addEventListener('click', () => {
+                tapBPMCalculator = {
+                    taps: [],
+                    lastTapTime: 0,
+                    tapConfidence: 0,
+                    bpmHistory: [],
+                    steadinessScore: 0,
+                    tapCount: 0
+                };
+                bpmDisplay.textContent = '0';
+                updateTapFeedback(0, 'Tap to detect BPM');
+            });
+            
+            // Add tap button styles for visual feedback
+            const tapButtonStyle = document.createElement('style');
+            tapButtonStyle.textContent = `
+                #tapButton.active {
+                    background-color: var(--accent) !important;
+                    transform: scale(0.96) !important;
+                }
+            `;
+            document.head.appendChild(tapButtonStyle);
             
             tapButton.addEventListener('click', handleTap);
             tapButton.addEventListener('touchstart', (e) => {
@@ -1057,8 +1244,28 @@
                     // Reset the display
                     audioBpmDisplay.textContent = '0';
                     
-                    // Request microphone access
-                    audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    // Add a calibration indicator
+                    const calibrationEl = document.createElement('div');
+                    calibrationEl.id = 'calibrationIndicator';
+                    calibrationEl.style.cssText = `
+                        margin: 10px 0;
+                        text-align: center;
+                        color: var(--text-secondary);
+                        font-size: 0.9rem;
+                    `;
+                    calibrationEl.textContent = 'Calibrating...';
+                    
+                    const visualizerContainer = document.querySelector('.visualizer-container');
+                    visualizerContainer.parentNode.insertBefore(calibrationEl, visualizerContainer.nextSibling);
+                    
+                    // Request microphone access with optimal settings for music detection
+                    audioStream = await navigator.mediaDevices.getUserMedia({ 
+                        audio: { 
+                            echoCancellation: false,
+                            noiseSuppression: false,
+                            autoGainControl: true // Enable auto gain for better music capture
+                        } 
+                    });
                     
                     // Create audio context
                     if (!audioContext) {
@@ -1069,31 +1276,329 @@
                         audioContext.resume();
                     }
                     
-                    // Create analyser node
+                    // Create analyser node with higher resolution for better frequency analysis
                     const source = audioContext.createMediaStreamSource(audioStream);
                     audioAnalyser = audioContext.createAnalyser();
-                    audioAnalyser.fftSize = 2048;
-                    audioAnalyser.smoothingTimeConstant = 0.8;
+                    audioAnalyser.fftSize = 8192; // Much higher resolution for complex audio
+                    audioAnalyser.smoothingTimeConstant = 0.6; // Better balance for music
                     
+                    // Connect directly for full spectrum analysis
                     source.connect(audioAnalyser);
                     
-                    // Create data array
+                    // Create data arrays for different analyses
                     audioData = new Uint8Array(audioAnalyser.frequencyBinCount);
                     
-                    // Start detection
+                    // Show user we're listening
+                    showNotification('Analyzing audio...', 'success');
+                    
+                    // Initialize BPM detector with different approach for music
+                    audioBPMDetector = {
+                        // Basic properties
+                        energyHistory: [],
+                        beatHistory: [],
+                        tempoEstimates: {},
+                        lastReportedBPM: 0,
+                        confidence: 0,
+                        
+                        // Analysis buffers
+                        analysisBuffer: [], // Time domain buffer for autocorrelation
+                        energySeries: [], // Energy measurement series with timestamps
+                        frequencyBands: {
+                            low: {range: [20, 200], buffer: [], weight: 1.0}, // Bass
+                            mid: {range: [200, 800], buffer: [], weight: 0.7}, // Low mids
+                            high: {range: [800, 2000], buffer: [], weight: 0.3} // High mids
+                        },
+                        
+                        // Detection settings
+                        minTempo: 60,
+                        maxTempo: 200,
+                        historySize: 6, // seconds of history to keep
+                        
+                        // Initialize timestamp
+                        lastProcessTime: Date.now(),
+                        processingInterval: 100, // ms between processing chunks
+                        
+                        // Method to update energy for each frequency band
+                        updateFrequencyBands: function(frequencyData, sampleRate, binCount) {
+                            const bands = this.frequencyBands;
+                            const nyquist = sampleRate / 2;
+                            const binSize = nyquist / binCount;
+                            
+                            // Reset band energies
+                            for (const band in bands) {
+                                let sum = 0;
+                                let count = 0;
+                                
+                                // Convert frequency ranges to bin indices
+                                const lowBin = Math.floor(bands[band].range[0] / binSize);
+                                const highBin = Math.ceil(bands[band].range[1] / binSize);
+                                
+                                // Sum band energy
+                                for (let i = lowBin; i < highBin && i < frequencyData.length; i++) {
+                                    sum += frequencyData[i];
+                                    count++;
+                                }
+                                
+                                // Store normalized energy (0-1 range)
+                                const energy = count > 0 ? (sum / count) / 255 : 0;
+                                bands[band].buffer.push({
+                                    time: Date.now(),
+                                    energy: energy
+                                });
+                                
+                                // Keep buffer within history limit
+                                const oldestTime = Date.now() - (this.historySize * 1000);
+                                bands[band].buffer = bands[band].buffer.filter(e => e.time >= oldestTime);
+                            }
+                        },
+                        
+                        // Detect onsets in each band
+                        detectOnsets: function() {
+                            const onsets = [];
+                            const now = Date.now();
+                            
+                            for (const band in this.frequencyBands) {
+                                const buffer = this.frequencyBands[band].buffer;
+                                const weight = this.frequencyBands[band].weight;
+                                
+                                if (buffer.length < 5) continue; // Need enough history
+                                
+                                // Get recent energies
+                                const recentEnergies = buffer.slice(-10);
+                                
+                                // Calculate moving average
+                                const movingAvg = recentEnergies.reduce((sum, e) => sum + e.energy, 0) / 
+                                               recentEnergies.length;
+                                
+                                // Look for sudden increases in energy
+                                for (let i = 3; i < recentEnergies.length - 1; i++) {
+                                    const prev = recentEnergies[i-1].energy;
+                                    const current = recentEnergies[i].energy;
+                                    const next = recentEnergies[i+1].energy;
+                                    
+                                    // Check for local peak with significant energy
+                                    if (current > prev && current >= next && current > movingAvg * 1.2 && current > 0.05) {
+                                        onsets.push({
+                                            time: recentEnergies[i].time,
+                                            energy: current,
+                                            weight: weight
+                                        });
+                                        break; // Only count one onset per band per analysis
+                                    }
+                                }
+                            }
+                            
+                            return onsets;
+                        },
+                        
+                        // Process detected onsets into tempo estimates
+                        processOnsets: function(onsets) {
+                            const now = Date.now();
+                            
+                            // Add all onsets to beat history with their weights
+                            onsets.forEach(onset => {
+                                this.beatHistory.push({
+                                    time: onset.time,
+                                    weight: onset.weight
+                                });
+                            });
+                            
+                            // Keep history limited to historySize
+                            const oldestAllowed = now - (this.historySize * 1000);
+                            this.beatHistory = this.beatHistory.filter(beat => beat.time >= oldestAllowed);
+                            
+                            // Need enough beats to estimate tempo
+                            if (this.beatHistory.length < 4) return null;
+                            
+                            // Calculate all possible intervals between beats
+                            const intervals = [];
+                            for (let i = 0; i < this.beatHistory.length; i++) {
+                                for (let j = i + 1; j < this.beatHistory.length; j++) {
+                                    const interval = this.beatHistory[j].time - this.beatHistory[i].time;
+                                    // Only consider reasonable intervals
+                                    if (interval > 200 && interval < 2000) { // 30-300 BPM
+                                        // Weight by the product of beat weights and recency
+                                        const recencyWeight = Math.exp(-(now - this.beatHistory[j].time) / 3000);
+                                        const weight = this.beatHistory[i].weight * 
+                                                      this.beatHistory[j].weight * 
+                                                      recencyWeight;
+                                                      
+                                        intervals.push({
+                                            interval,
+                                            weight
+                                        });
+                                    }
+                                }
+                            }
+                            
+                            if (intervals.length === 0) return null;
+                            
+                            // Group similar intervals to find common patterns
+                            const groupedIntervals = {};
+                            intervals.forEach(item => {
+                                // Round to nearest 10ms for grouping
+                                const roundedInterval = Math.round(item.interval / 10) * 10;
+                                if (!groupedIntervals[roundedInterval]) {
+                                    groupedIntervals[roundedInterval] = { 
+                                        totalWeight: 0, 
+                                        count: 0, 
+                                        avgInterval: 0 
+                                    };
+                                }
+                                
+                                groupedIntervals[roundedInterval].totalWeight += item.weight;
+                                groupedIntervals[roundedInterval].count++;
+                                groupedIntervals[roundedInterval].avgInterval += item.interval * item.weight;
+                            });
+                            
+                            // Calculate average intervals and convert to BPM
+                            const tempoEstimates = [];
+                            for (const interval in groupedIntervals) {
+                                const group = groupedIntervals[interval];
+                                const avgInterval = group.avgInterval / group.totalWeight;
+                                
+                                // Convert to BPM
+                                const exactBpm = 60000 / avgInterval;
+                                
+                                // Check if it's a reasonable BPM
+                                if (exactBpm >= this.minTempo && exactBpm <= this.maxTempo) {
+                                    tempoEstimates.push({
+                                        bpm: exactBpm,
+                                        weight: group.totalWeight,
+                                        count: group.count
+                                    });
+                                }
+                                
+                                // Also check if it's a multiple or division of the tempo
+                                [0.5, 2].forEach(factor => {
+                                    const relatedBpm = exactBpm * factor;
+                                    if (relatedBpm >= this.minTempo && relatedBpm <= this.maxTempo) {
+                                        tempoEstimates.push({
+                                            bpm: relatedBpm,
+                                            weight: group.totalWeight * 0.6, // Lower confidence for multiples/divisions
+                                            count: group.count
+                                        });
+                                    }
+                                });
+                            }
+                            
+                            if (tempoEstimates.length === 0) return null;
+                            
+                            // Sort by weight (confidence)
+                            tempoEstimates.sort((a, b) => b.weight - a.weight);
+                            
+                            // Return the top estimate
+                            return {
+                                bpm: Math.round(tempoEstimates[0].bpm),
+                                confidence: Math.min(1, tempoEstimates[0].weight / 5) // Normalize confidence
+                            };
+                        }
+                    };
+                    
+                    // Start detection with music-focused logic
                     isDetecting = true;
-                    detectBPM();
+                    
+                    // Modified detection function specifically for songs
+                    function detectMusicBPM() {
+                        if (!isDetecting) return;
+                        
+                        try {
+                            const now = Date.now();
+                            
+                            // Only process at specific intervals to save CPU
+                            if (now - audioBPMDetector.lastProcessTime < audioBPMDetector.processingInterval) {
+                                requestAnimationFrame(detectMusicBPM);
+                                return;
+                            }
+                            
+                            audioBPMDetector.lastProcessTime = now;
+                            
+                            // Get frequency data
+                            audioAnalyser.getByteFrequencyData(audioData);
+                            
+                            // Update frequency band energies
+                            audioBPMDetector.updateFrequencyBands(
+                                audioData, 
+                                audioContext.sampleRate, 
+                                audioAnalyser.frequencyBinCount
+                            );
+                            
+                            // Detect onsets in the audio
+                            const onsets = audioBPMDetector.detectOnsets();
+                            
+                            // Only process further if we found onsets
+                            if (onsets.length > 0) {
+                                // Process onsets to estimate tempo
+                                const tempoEstimate = audioBPMDetector.processOnsets(onsets);
+                                
+                                if (tempoEstimate) {
+                                    // Update detector confidence
+                                    audioBPMDetector.confidence = tempoEstimate.confidence;
+                                    
+                                    // Only report stable tempos with reasonable confidence
+                                    if (tempoEstimate.confidence > 0.3 || 
+                                        (audioBPMDetector.lastReportedBPM > 0 && 
+                                         Math.abs(tempoEstimate.bpm - audioBPMDetector.lastReportedBPM) < 3)) {
+                                        
+                                        // Quantize to common BPMs if we're close and confident
+                                        let reportedBpm = tempoEstimate.bpm;
+                                        if (tempoEstimate.confidence > 0.5) {
+                                            const commonBpms = [80, 90, 100, 110, 120, 125, 128, 130, 140, 150, 160, 170, 174, 180];
+                                            for (const commonBpm of commonBpms) {
+                                                if (Math.abs(reportedBpm - commonBpm) <= 2) {
+                                                    reportedBpm = commonBpm;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        
+                                        audioBpmDisplay.textContent = reportedBpm;
+                                        audioBPMDetector.lastReportedBPM = reportedBpm;
+                                        
+                                        // Update calibration indicator
+                                        const calibrationEl = document.getElementById('calibrationIndicator');
+                                        if (calibrationEl) {
+                                            calibrationEl.textContent = 'Tempo detected: ' + reportedBpm + ' BPM';
+                                            
+                                            // Change text based on confidence
+                                            if (tempoEstimate.confidence > 0.7) {
+                                                calibrationEl.textContent += ' (High confidence)';
+                                            } else if (tempoEstimate.confidence > 0.4) {
+                                                calibrationEl.textContent += ' (Medium confidence)';
+                                            } else {
+                                                calibrationEl.textContent += ' (Refining...)';
+                                            }
+                                        }
+                                        
+                                        // Visual feedback
+                                        if (onsets.length > 0) {
+                                            metronomeDot.classList.add('active');
+                                            setTimeout(() => metronomeDot.classList.remove('active'), 100);
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (error) {
+                            console.error('Error in music BPM detection:', error);
+                        }
+                        
+                        requestAnimationFrame(detectMusicBPM);
+                    }
+                    
+                    // Start the music-specific detection
+                    detectMusicBPM();
                     visualizeAudio();
                     
                     startAudioButton.disabled = true;
                     stopAudioButton.disabled = false;
                     saveAudioBpmButton.disabled = false;
-                    
-                    // Show notification
-                    showNotification('Listening for beats...', 'success');
                 } catch (error) {
                     console.error('Error accessing microphone:', error);
                     showNotification('Could not access microphone', 'error');
+                    
+                    // Clean up calibration element if it exists
+                    const calibrationEl = document.getElementById('calibrationIndicator');
+                    if (calibrationEl) calibrationEl.remove();
                 }
             });
             
@@ -1111,92 +1616,184 @@
                 if (!isDetecting) return;
                 
                 try {
-                    // Simple beat detection
+                    // Enhanced beat detection with frequency band focus
                     audioAnalyser.getByteFrequencyData(audioData);
                     
-                    // Calculate average energy
-                    let energy = 0;
-                    for (let i = 0; i < audioData.length; i++) {
-                        energy += audioData[i];
-                    }
-                    energy /= audioData.length;
+                    // Focus on frequency ranges most likely to contain beats (bass/kick drum)
+                    // For 44.1kHz sampling rate with fftSize 2048, indices ~10-80 cover approximately 20-400Hz
+                    const lowFreqStart = 5;
+                    const lowFreqEnd = 60;
+                    const midFreqStart = 60;
+                    const midFreqEnd = 200;
                     
-                    // Store energy values over time
+                    // Weight low frequencies (bass) more heavily
+                    let lowEnergy = 0;
+                    for (let i = lowFreqStart; i < lowFreqEnd; i++) {
+                        lowEnergy += audioData[i] * 1.5; // Apply weight to bass frequencies
+                    }
+                    lowEnergy /= (lowFreqEnd - lowFreqStart);
+                    
+                    // Calculate some mid frequencies for context
+                    let midEnergy = 0;
+                    for (let i = midFreqStart; i < midFreqEnd; i++) {
+                        midEnergy += audioData[i] * 0.7; // Less weight to mid frequencies
+                    }
+                    midEnergy /= (midFreqEnd - midFreqStart);
+                    
+                    // Combined weighted energy
+                    const energy = (lowEnergy * 0.8) + (midEnergy * 0.2);
+                    
+                    // Initialize or update detector
                     if (!audioBPMDetector) {
                         audioBPMDetector = {
                             energyHistory: [],
+                            instantEnergy: [],
                             beatHistory: [],
+                            bpmCandidates: {},
                             lastBeatTime: 0,
-                            threshold: 90, // Slightly lower threshold for better sensitivity
-                            dynamicThreshold: 1.3 // Dynamic multiplier
+                            threshold: 55, // Lower threshold for better sensitivity
+                            dynamicThreshold: 1.15, // Lower multiplier for better sensitivity
+                            confidence: 0,
+                            lastReportedBPM: 0
                         };
                     }
                     
-                    audioBPMDetector.energyHistory.push(energy);
+                    // Store energy values with timestamp
+                    audioBPMDetector.energyHistory.push({
+                        time: Date.now(),
+                        energy: energy
+                    });
                     
-                    // Keep history limited
-                    if (audioBPMDetector.energyHistory.length > 40) { // Increase history for better averaging
+                    // Keep history limited to ~4 seconds
+                    const currentTime = Date.now();
+                    while (audioBPMDetector.energyHistory.length > 0 && 
+                           currentTime - audioBPMDetector.energyHistory[0].time > 4000) {
                         audioBPMDetector.energyHistory.shift();
                     }
                     
-                    // Calculate average energy with more weight to recent values
-                    let weightedSum = 0;
-                    let weightSum = 0;
-                    for (let i = 0; i < audioBPMDetector.energyHistory.length; i++) {
-                        const weight = (i / audioBPMDetector.energyHistory.length) + 0.5;
-                        weightedSum += audioBPMDetector.energyHistory[i] * weight;
-                        weightSum += weight;
-                    }
-                    const avgEnergy = weightedSum / weightSum;
+                    // Calculate recent energy average (last ~1 second) with decaying weight
+                    let recentSum = 0;
+                    let recentCount = 0;
+                    let dynamicThresholdValue = 0;
                     
-                    // Detect beats with dynamic threshold
-                    const now = Date.now();
-                    const dynamicThresholdValue = avgEnergy * audioBPMDetector.dynamicThreshold;
-                    
-                    // Visual feedback for detection
-                    if (energy > dynamicThresholdValue && 
-                        energy > audioBPMDetector.threshold && 
-                        now - audioBPMDetector.lastBeatTime > 250) { // Allow slightly faster detection
+                    for (let i = audioBPMDetector.energyHistory.length - 1; i >= 0; i--) {
+                        const entry = audioBPMDetector.energyHistory[i];
+                        const age = currentTime - entry.time;
                         
+                        if (age < 1000) { // Only consider last second for thresholding
+                            // Exponential decay weight (newer values count more)
+                            const weight = Math.exp(-age / 500);
+                            recentSum += entry.energy * weight;
+                            recentCount += weight;
+                        }
+                    }
+                    
+                    const recentAvgEnergy = recentCount > 0 ? recentSum / recentCount : 0;
+                    dynamicThresholdValue = recentAvgEnergy * audioBPMDetector.dynamicThreshold;
+                    
+                    // Adaptive threshold: combine fixed and dynamic components
+                    const effectiveThreshold = Math.max(
+                        audioBPMDetector.threshold,
+                        dynamicThresholdValue
+                    );
+                    
+                    // Detect beat onset (rising edge, not just peak)
+                    const now = Date.now();
+                    const minInterBeatInterval = 200; // 300 BPM max
+                    
+                    // Store instantaneous energy for onset detection
+                    audioBPMDetector.instantEnergy.push(energy);
+                    if (audioBPMDetector.instantEnergy.length > 3) {
+                        audioBPMDetector.instantEnergy.shift();
+                    }
+                    
+                    // Check for energy rising significantly and exceeding threshold
+                    const isRising = audioBPMDetector.instantEnergy.length >= 3 &&
+                        audioBPMDetector.instantEnergy[2] > audioBPMDetector.instantEnergy[0] * 1.1;
+                    
+                    if (energy > effectiveThreshold && 
+                        isRising &&
+                        now - audioBPMDetector.lastBeatTime > minInterBeatInterval) {
+                        
+                        // Beat detected!
                         audioBPMDetector.lastBeatTime = now;
+                        
+                        // Visual feedback
                         metronomeDot.classList.add('active');
                         setTimeout(() => metronomeDot.classList.remove('active'), 100);
                         
-                        // Record time between beats
+                        // Process beat intervals
                         if (audioBPMDetector.beatHistory.length > 0) {
-                            const timeSinceLastBeat = now - audioBPMDetector.beatHistory[audioBPMDetector.beatHistory.length - 1];
-                            if (timeSinceLastBeat > 250 && timeSinceLastBeat < 2500) { // Wider range
+                            const lastBeat = audioBPMDetector.beatHistory[audioBPMDetector.beatHistory.length - 1];
+                            const interval = now - lastBeat;
+                            
+                            // Only consider reasonable intervals (40-300 BPM)
+                            const minInterval = 200; // 300 BPM
+                            const maxInterval = 1500; // 40 BPM
+                            
+                            if (interval >= minInterval && interval <= maxInterval) {
                                 audioBPMDetector.beatHistory.push(now);
+                                
+                                // Convert to BPM and round to nearest 0.5
+                                const exactBpm = 60000 / interval;
+                                const roundedBpm = Math.round(exactBpm * 2) / 2;
+                                
+                                // Group similar BPMs together
+                                const bpmKey = roundedBpm.toString();
+                                if (!audioBPMDetector.bpmCandidates[bpmKey]) {
+                                    audioBPMDetector.bpmCandidates[bpmKey] = 1;
+                                } else {
+                                    audioBPMDetector.bpmCandidates[bpmKey]++;
+                                }
                             }
                         } else {
                             audioBPMDetector.beatHistory.push(now);
                         }
                         
-                        // Keep beat history limited
-                        if (audioBPMDetector.beatHistory.length > 12) { // Larger history for better accuracy
+                        // Limit beat history to recent beats
+                        while (audioBPMDetector.beatHistory.length > 0 && 
+                               now - audioBPMDetector.beatHistory[0] > 5000) {
                             audioBPMDetector.beatHistory.shift();
                         }
                         
-                        // Calculate BPM if we have enough beats
-                        if (audioBPMDetector.beatHistory.length >= 3) {
-                            const intervals = [];
-                            for (let i = 1; i < audioBPMDetector.beatHistory.length; i++) {
-                                intervals.push(audioBPMDetector.beatHistory[i] - audioBPMDetector.beatHistory[i-1]);
+                        // Calculate most likely BPM from candidates
+                        let bestBPM = 0;
+                        let bestCount = 0;
+                        let totalVotes = 0;
+                        
+                        for (const [bpm, count] of Object.entries(audioBPMDetector.bpmCandidates)) {
+                            totalVotes += count;
+                            if (count > bestCount) {
+                                bestCount = count;
+                                bestBPM = parseFloat(bpm);
                             }
+                        }
+                        
+                        // Calculate confidence level
+                        const confidence = bestCount / totalVotes;
+                        audioBPMDetector.confidence = confidence;
+                        
+                        // Only update display if confidence is good or BPM has stabilized
+                        const bpmThreshold = 0.25;
+                        const hasEnoughBeats = audioBPMDetector.beatHistory.length >= 4;
+                        
+                        if (hasEnoughBeats && (confidence > bpmThreshold || 
+                            Math.abs(bestBPM - audioBPMDetector.lastReportedBPM) < 2)) {
                             
-                            // Sort intervals and remove outliers
-                            intervals.sort((a, b) => a - b);
-                            const validIntervals = intervals.slice(
-                                Math.floor(intervals.length * 0.2),
-                                Math.ceil(intervals.length * 0.8)
-                            );
+                            // Stable BPM detected
+                            audioBpmDisplay.textContent = Math.round(bestBPM);
+                            audioBPMDetector.lastReportedBPM = bestBPM;
                             
-                            if (validIntervals.length > 0) {
-                                const avgInterval = validIntervals.reduce((a, b) => a + b, 0) / validIntervals.length;
-                                const bpm = Math.round(60000 / avgInterval);
+                            // Clear old candidates periodically to adapt to tempo changes
+                            if (Object.keys(audioBPMDetector.bpmCandidates).length > 10) {
+                                const oldestAllowedBeatTime = now - 4000;
+                                audioBPMDetector.beatHistory = audioBPMDetector.beatHistory.filter(
+                                    time => time >= oldestAllowedBeatTime
+                                );
                                 
-                                if (bpm >= 40 && bpm <= 240) {
-                                    audioBpmDisplay.textContent = bpm;
+                                // Reset candidates if beats are getting too old
+                                if (audioBPMDetector.beatHistory.length < 3) {
+                                    audioBPMDetector.bpmCandidates = {};
                                 }
                             }
                         }
@@ -1225,31 +1822,44 @@
                     // Get frequency data
                     audioAnalyser.getByteFrequencyData(audioData);
                     
-                    // Create gradient once (performance optimization)
-                    const gradient = audioContext2.createLinearGradient(0, 0, 0, audioVisualizer.height);
-                    gradient.addColorStop(0, '#9b4dca');
-                    gradient.addColorStop(1, '#ff79c6');
-                    audioContext2.fillStyle = gradient;
+                    // Create frequency visualization with multiple bands highlighted
+                    const lowGradient = audioContext2.createLinearGradient(0, 0, 0, audioVisualizer.height);
+                    lowGradient.addColorStop(0, 'rgba(255, 121, 198, 1)'); // Pink for bass
+                    lowGradient.addColorStop(1, 'rgba(185, 142, 218, 0.8)');
                     
-                    // Calculate bar width to account for high-DPI displays
-                    const barCount = Math.min(audioData.length, audioVisualizer.width / 3);
+                    const midGradient = audioContext2.createLinearGradient(0, 0, 0, audioVisualizer.height);
+                    midGradient.addColorStop(0, 'rgba(155, 77, 202, 1)'); // Purple for mids
+                    midGradient.addColorStop(1, 'rgba(126, 61, 179, 0.8)');
+                    
+                    const highGradient = audioContext2.createLinearGradient(0, 0, 0, audioVisualizer.height);
+                    highGradient.addColorStop(0, 'rgba(80, 250, 123, 1)'); // Green for highs
+                    highGradient.addColorStop(1, 'rgba(80, 250, 123, 0.3)');
+                    
+                    // Use logarithmic scale for better frequency visualization
+                    const barCount = Math.min(audioData.length / 4, audioVisualizer.width / 3);
                     const barWidth = audioVisualizer.width / barCount - 1;
-                    let x = 0;
                     
-                    // Calculate average energy for visual feedback on beat detection
-                    let totalEnergy = 0;
-                    
-                    // Use subset of frequency data for better visualization
-                    const step = Math.ceil(audioData.length / barCount);
-                    
+                    // Draw frequency bands with different colors
                     for (let i = 0; i < barCount; i++) {
-                        const dataIndex = i * step;
-                        const value = audioData[dataIndex];
-                        totalEnergy += value;
+                        // Use logarithmic mapping to emphasize lower frequencies
+                        const logFactor = Math.log10(1 + i) / Math.log10(barCount);
+                        const dataIndex = Math.floor(logFactor * audioData.length);
                         
-                        const barHeight = (value / 255) * audioVisualizer.height;
+                        // Get value and enhance it a bit for visualization
+                        const value = Math.pow(audioData[dataIndex] / 255, 0.8) * 255;
+                        const barHeight = (value / 255) * (audioVisualizer.height * 0.7);
                         
-                        // Add rounded corners to bars for smoother visuals
+                        // Different colors for different frequency ranges
+                        if (dataIndex < audioData.length * 0.1) { // Bass (0-10%)
+                            audioContext2.fillStyle = lowGradient;
+                        } else if (dataIndex < audioData.length * 0.3) { // Mid (10-30%)
+                            audioContext2.fillStyle = midGradient;
+                        } else { // High (30%+)
+                            audioContext2.fillStyle = highGradient;
+                        }
+                        
+                        // Draw bar with rounded corners
+                        const x = i * (barWidth + 1);
                         audioContext2.beginPath();
                         audioContext2.roundRect(
                             x, 
@@ -1259,26 +1869,98 @@
                             [2, 2, 0, 0]
                         );
                         audioContext2.fill();
-                        
-                        x += barWidth + 1;
                     }
                     
-                    // Add a beat indicator line
-                    if (audioBPMDetector && audioBPMDetector.energyHistory.length > 0) {
-                        const avgEnergy = audioBPMDetector.energyHistory.reduce((a, b) => a + b, 0) / 
-                                         audioBPMDetector.energyHistory.length;
+                    // Add detected BPM and confidence information
+                    if (audioBPMDetector && audioBPMDetector.confidence > 0) {
+                        // Show confidence level
+                        const confidenceLabel = audioBPMDetector.confidence > 0.7 ? 'High Confidence' :
+                                            audioBPMDetector.confidence > 0.4 ? 'Medium Confidence' : 
+                                            'Analyzing...';
                         
-                        const thresholdY = audioVisualizer.height - (avgEnergy / 255 * audioVisualizer.height * 
-                                          audioBPMDetector.dynamicThreshold);
+                        audioContext2.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                        audioContext2.font = '12px sans-serif';
+                        audioContext2.textAlign = 'right';
+                        audioContext2.fillText(
+                            confidenceLabel, 
+                            audioVisualizer.width - 10, 
+                            20
+                        );
                         
-                        // Draw threshold line
-                        audioContext2.beginPath();
-                        audioContext2.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-                        audioContext2.setLineDash([5, 3]);
-                        audioContext2.moveTo(0, thresholdY);
-                        audioContext2.lineTo(audioVisualizer.width, thresholdY);
-                        audioContext2.stroke();
-                        audioContext2.setLineDash([]);
+                        // Draw confidence bar
+                        const barWidth = 100;
+                        const barHeight = 6;
+                        const barX = audioVisualizer.width - barWidth - 10;
+                        const barY = 30;
+                        
+                        // Background
+                        audioContext2.fillStyle = 'rgba(255, 255, 255, 0.2)';
+                        audioContext2.fillRect(barX, barY, barWidth, barHeight);
+                        
+                        // Fill based on confidence
+                        const fillColor = audioBPMDetector.confidence > 0.7 ? '#50fa7b' :
+                                        audioBPMDetector.confidence > 0.4 ? '#ffb86c' : 
+                                        '#ff5555';
+                        
+                        audioContext2.fillStyle = fillColor;
+                        audioContext2.fillRect(
+                            barX, 
+                            barY, 
+                            barWidth * audioBPMDetector.confidence, 
+                            barHeight
+                        );
+                        
+                        // Add detected BPM visualization
+                        if (audioBpmDisplay.textContent !== '0') {
+                            const bpm = parseInt(audioBpmDisplay.textContent);
+                            
+                            // Display the BPM
+                            audioContext2.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                            audioContext2.font = '16px sans-serif';
+                            audioContext2.textAlign = 'left';
+                            audioContext2.fillText(
+                                `${bpm} BPM`, 
+                                15, 
+                                25
+                            );
+                            
+                            // Add frequency band indicators
+                            let y = 55;
+                            for (const band in audioBPMDetector.frequencyBands) {
+                                const bandData = audioBPMDetector.frequencyBands[band];
+                                
+                                // Only show if we have data
+                                if (bandData.buffer && bandData.buffer.length > 0) {
+                                    // Get latest energy
+                                    const latestEnergy = bandData.buffer[bandData.buffer.length - 1].energy;
+                                    
+                                    // Choose color
+                                    let color;
+                                    if (band === 'low') color = 'rgba(255, 121, 198, 0.8)';
+                                    else if (band === 'mid') color = 'rgba(155, 77, 202, 0.8)';
+                                    else color = 'rgba(80, 250, 123, 0.8)';
+                                    
+                                    // Draw mini energy bar
+                                    audioContext2.fillStyle = 'rgba(255, 255, 255, 0.2)';
+                                    audioContext2.fillRect(15, y, 60, 6);
+                                    
+                                    audioContext2.fillStyle = color;
+                                    audioContext2.fillRect(15, y, 60 * latestEnergy, 6);
+                                    
+                                    // Label
+                                    audioContext2.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                                    audioContext2.font = '10px sans-serif';
+                                    audioContext2.textAlign = 'left';
+                                    audioContext2.fillText(
+                                        band.toUpperCase(), 
+                                        80, 
+                                        y + 5
+                                    );
+                                    
+                                    y += 12;
+                                }
+                            }
+                        }
                     }
                 } catch (error) {
                     console.error('Error in audio visualization:', error);
