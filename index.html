@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BPM IT - Musician's Toolkit</title>
+    <title>BPM Detector - Musician's Toolkit</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <meta name="theme-color" content="#121212">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -21,6 +21,14 @@
             --success: #50fa7b;
             --danger: #ff5555;
             --warning: #ffb86c;
+            --border-radius: 10px;
+            --shadow-sm: 0 2px 5px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 5px 15px rgba(0, 0, 0, 0.15);
+            --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.2);
+            --transition-fast: all 0.2s ease;
+            --transition-med: all 0.3s ease;
+            --gradient-primary: linear-gradient(135deg, var(--purple-primary), var(--purple-secondary));
+            --gradient-accent: linear-gradient(135deg, var(--accent), var(--purple-secondary));
         }
 
         * {
@@ -30,37 +38,42 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--bg-primary);
             color: var(--text-primary);
             line-height: 1.6;
             min-height: 100vh;
             padding-bottom: 60px;
+            overflow-x: hidden;
         }
 
         header {
             background-color: var(--bg-secondary);
             padding: 1rem;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 3px 15px rgba(0, 0, 0, 0.2);
             position: relative;
             z-index: 10;
+            border-bottom: 1px solid rgba(155, 77, 202, 0.1);
         }
 
         .app-title {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 0.5rem;
+            gap: 0.6rem;
         }
 
         .app-title h1 {
             font-size: 1.8rem;
             color: var(--purple-light);
+            font-weight: 600;
+            letter-spacing: 0.5px;
         }
 
         .app-title i {
             color: var(--accent);
             font-size: 1.8rem;
+            filter: drop-shadow(0 0 5px rgba(255, 121, 198, 0.4));
         }
 
         .container {
@@ -71,22 +84,41 @@
 
         .card {
             background-color: var(--bg-secondary);
-            border-radius: 8px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            padding: 1.2rem;
+            margin-bottom: 1.2rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
             transition: all 0.3s ease;
-            border: 1px solid transparent;
+            border: 1px solid rgba(155, 77, 202, 0.05);
+            position: relative;
+            overflow: hidden;
         }
 
         .card:hover {
             transform: translateY(-3px);
             border-color: rgba(155, 77, 202, 0.3);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
         }
         
         .card.active {
             border-color: var(--purple-primary);
-            box-shadow: 0 0 15px rgba(155, 77, 202, 0.3);
+            box-shadow: 0 0 20px rgba(155, 77, 202, 0.25);
+        }
+        
+        .card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, var(--purple-primary), var(--accent));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .card:hover::after, .card.active::after {
+            opacity: 1;
         }
 
         .card-title {
@@ -107,27 +139,42 @@
             color: white;
             border: none;
             padding: 0.6rem 1.2rem;
-            border-radius: 4px;
+            border-radius: 8px;
             cursor: pointer;
             font-size: 1rem;
-            transition: background-color 0.2s ease;
+            transition: all 0.2s ease;
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 0.5rem;
+            font-weight: 500;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
         }
 
         button:hover {
             background-color: var(--purple-secondary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        button:active {
+            transform: translateY(1px);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
         button:disabled {
             background-color: #555;
             cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+            opacity: 0.7;
         }
 
         button.secondary {
             background-color: transparent;
-            border: 1px solid var(--purple-primary);
+            border: 1.5px solid var(--purple-primary);
             color: var(--purple-primary);
         }
 
@@ -153,22 +200,31 @@
             background-color: var(--bg-primary);
             border: 1px solid #444;
             color: var(--text-primary);
-            padding: 0.6rem;
-            border-radius: 4px;
+            padding: 0.8rem;
+            border-radius: 8px;
             font-size: 1rem;
             width: 100%;
             max-width: 300px;
+            transition: all 0.2s ease;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
         input:focus, select:focus {
             outline: none;
             border-color: var(--purple-primary);
+            box-shadow: 0 0 0 2px rgba(155, 77, 202, 0.2), inset 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        input:hover, select:hover {
+            border-color: #666;
         }
 
         label {
             display: block;
             margin-bottom: 0.5rem;
             color: var(--text-secondary);
+            font-weight: 500;
+            font-size: 0.95rem;
         }
 
         .form-group {
@@ -188,6 +244,41 @@
             text-align: center;
             margin: 1rem 0;
             color: var(--purple-light);
+            position: relative;
+            display: inline-block;
+            padding: 0.2rem 1rem;
+            border-radius: 8px;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .result-display:hover {
+            transform: scale(1.03);
+            text-shadow: 0 3px 8px rgba(155, 77, 202, 0.4);
+        }
+        
+        .result-display::after {
+            content: '';
+            position: absolute;
+            bottom: -3px;
+            left: 25%;
+            right: 25%;
+            height: 2px;
+            background: linear-gradient(to right, 
+                transparent, 
+                var(--purple-primary), 
+                var(--accent), 
+                transparent
+            );
+            border-radius: 2px;
+            opacity: 0.8;
+        }
+        
+        .unit {
+            font-size: 0.5em;
+            opacity: 0.7;
+            font-weight: normal;
+            margin-left: 0.2rem;
         }
 
         .bpm-counter {
@@ -197,22 +288,30 @@
         }
 
         #tapButton {
-            font-size: 1.2rem;
+            font-size: 1.3rem;
             padding: 1.5rem 2.5rem;
             margin: 1rem 0;
             border-radius: 50px;
-            background-color: var(--purple-primary);
-            transition: all 0.2s ease;
+            background: linear-gradient(135deg, var(--purple-primary), var(--purple-secondary));
+            transition: all 0.25s ease;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 15px rgba(155, 77, 202, 0.3);
         }
 
         #tapButton:hover {
-            background-color: var(--purple-secondary);
-            transform: scale(1.05);
+            background: linear-gradient(135deg, var(--purple-secondary), var(--purple-primary));
+            transform: scale(1.05) translateY(-3px);
+            box-shadow: 0 6px 20px rgba(155, 77, 202, 0.4);
         }
 
         #tapButton:active {
-            transform: scale(0.95);
-            background-color: var(--accent);
+            transform: scale(0.96);
+            box-shadow: 0 2px 10px rgba(155, 77, 202, 0.2);
+        }
+        
+        #tapButton.active {
+            background: linear-gradient(135deg, var(--accent), var(--purple-secondary)) !important;
         }
 
         .metronome-display {
@@ -220,20 +319,38 @@
             flex-direction: column;
             align-items: center;
             margin: 1rem 0;
+            position: relative;
         }
 
         .metronome-dot {
-            width: 30px;
-            height: 30px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
-            background-color: var(--text-secondary);
-            margin-bottom: 1rem;
-            transition: background-color 0.1s ease;
+            background: linear-gradient(to bottom, #3a3a3a, #2a2a2a);
+            margin-bottom: 1.2rem;
+            transition: all 0.1s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            border: 1px solid #444;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .metronome-dot::after {
+            content: '';
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            right: 4px;
+            height: 10px;
+            border-radius: 50% 50% 0 0;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.15), rgba(255,255,255,0));
         }
 
         .metronome-dot.active {
-            background-color: var(--accent);
-            box-shadow: 0 0 15px var(--accent);
+            background: linear-gradient(to bottom, var(--accent), #ff3385);
+            transform: scale(1.1);
+            box-shadow: 0 0 15px var(--accent), 0 0 5px rgba(255, 121, 198, 0.8);
+            border-color: rgba(255, 255, 255, 0.5);
         }
 
         .slider-container {
@@ -245,28 +362,46 @@
         .range-slider {
             -webkit-appearance: none;
             width: 100%;
-            height: 6px;
-            border-radius: 5px;
-            background: #444;
+            height:
+            8px;
+            border-radius: 8px;
+            background: linear-gradient(to right, #333, #444);
             outline: none;
+            position: relative;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
         }
         
         .range-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 20px;
-            height: 20px;
+            width: 24px;
+            height: 24px;
             border-radius: 50%;
-            background: var(--purple-primary);
+            background: linear-gradient(135deg, var(--purple-primary), var(--purple-secondary));
             cursor: pointer;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s ease;
+        }
+        
+        .range-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            box-shadow: 0 2px 8px rgba(155, 77, 202, 0.5);
         }
         
         .range-slider::-moz-range-thumb {
-            width: 20px;
-            height: 20px;
+            width: 22px;
+            height: 22px;
             border-radius: 50%;
-            background: var(--purple-primary);
+            background: linear-gradient(135deg, var(--purple-primary), var(--purple-secondary));
             cursor: pointer;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s ease;
+        }
+        
+        .range-slider::-moz-range-thumb:hover {
+            transform: scale(1.1);
         }
 
         .saved-bpm-container {
@@ -277,15 +412,38 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0.8rem;
+            padding: 0.8rem 1rem;
             background-color: var(--bg-primary);
-            border-radius: 4px;
-            margin-bottom: 0.5rem;
+            border-radius: 8px;
+            margin-bottom: 0.7rem;
             transition: all 0.2s ease;
+            border: 1px solid rgba(155, 77, 202, 0.1);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+            position: relative;
+            overflow: hidden;
         }
 
         .saved-bpm-item:hover {
             background-color: #2a2a2a;
+            transform: translateX(3px);
+            border-color: rgba(155, 77, 202, 0.3);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .saved-bpm-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: linear-gradient(to bottom, var(--purple-primary), var(--accent));
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        
+        .saved-bpm-item:hover::before {
+            opacity: 1;
         }
 
         .saved-bpm-info {
@@ -297,10 +455,15 @@
         .saved-bpm-tempo {
             font-weight: bold;
             color: var(--purple-light);
+            font-size: 1.1rem;
         }
 
         .saved-bpm-name {
             color: var(--text-secondary);
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .saved-bpm-actions {
@@ -315,11 +478,15 @@
             color: var(--text-secondary);
             font-size: 1rem;
             padding: 0.3rem;
-            transition: color 0.2s ease;
+            transition: all 0.2s ease;
+            width: auto;
+            box-shadow: none;
         }
 
         .action-btn:hover {
             color: var(--text-primary);
+            transform: scale(1.1);
+            background: none;
         }
 
         .action-btn.use:hover {
@@ -345,6 +512,25 @@
             gap: 0.5rem;
             overflow-x: auto;
             padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+            justify-content: center;
+            -webkit-overflow-scrolling: touch;
+            position: relative;
+        }
+        
+        .tabs::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                rgba(155, 77, 202, 0.2) 15%,
+                rgba(155, 77, 202, 0.2) 85%,
+                transparent 100%
+            );
         }
 
         .tab {
@@ -352,14 +538,24 @@
             background-color: transparent;
             color: var(--text-secondary);
             border: none;
-            border-radius: 4px;
+            border-radius: 8px;
             cursor: pointer;
             white-space: nowrap;
+            font-weight: 500;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+        
+        .tab:hover {
+            color: var(--text-primary);
+            background-color: rgba(155, 77, 202, 0.1);
         }
 
         .tab.active {
-            background-color: var(--purple-primary);
+            background: linear-gradient(135deg, var(--purple-primary), var(--purple-secondary));
             color: white;
+            box-shadow: 0 2px 8px rgba(155, 77, 202, 0.3);
         }
 
         .tab-content {
@@ -375,17 +571,20 @@
             top: 20px;
             right: 20px;
             background-color: var(--success);
-            color: black;
+            color: #111;
             padding: 0.8rem 1.2rem;
-            border-radius: 4px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1);
             transform: translateY(-100px);
             opacity: 0;
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             z-index: 1000;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.7rem;
+            font-weight: 500;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .notification.show {
@@ -416,10 +615,12 @@
             width: 100%;
             height: 150px;
             background-color: var(--bg-primary);
-            border-radius: 8px;
+            border-radius: 10px;
             margin: 1rem 0;
             position: relative;
             overflow: hidden;
+            border: 1px solid rgba(155, 77, 202, 0.1);
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.2);
         }
 
         .visualizer-canvas {
@@ -489,20 +690,34 @@
             width: 100%;
             height: 100%;
             background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(3px);
             transition: all 0.3s ease;
         }
 
         .modal-content {
             background-color: var(--bg-secondary);
             margin: 15% auto;
-            padding: 1.5rem;
-            border-radius: 8px;
+            padding: 1.8rem;
+            border-radius: 10px;
             width: 80%;
             max-width: 500px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
             transform: scale(0.8);
             opacity: 0;
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid rgba(155, 77, 202, 0.2);
+            position: relative;
+        }
+        
+        .modal-content::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(to right, var(--purple-primary), var(--accent));
+            border-radius: 10px 10px 0 0;
         }
 
         .modal.show {
@@ -518,11 +733,16 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.8rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .modal-header h2 {
             color: var(--purple-light);
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 0;
         }
 
         .close-modal {
@@ -532,75 +752,113 @@
             background: none;
             border: none;
             padding: 0;
+            transition: all 0.2s ease;
+            width: auto;
+            line-height: 1;
+            box-shadow: none;
         }
 
         .close-modal:hover {
             color: var(--text-primary);
+            transform: scale(1.1);
+            background: none;
         }
 
         /* Mobile Styles */
         @media (max-width: 768px) {
             .card {
-                padding: 1rem;
+                padding: 0.8rem;
+                margin-bottom: 1rem;
             }
 
             .app-title h1 {
-                font-size: 1.5rem;
+                font-size: 1.3rem;
             }
 
             .result-display {
-                font-size: 2.5rem;
+                font-size: 2.2rem;
+                margin: 0.5rem 0;
             }
 
             #tapButton {
-                padding: 1.2rem 2rem;
+                padding: 1rem 1.8rem;
                 width: 80%;
-                max-width: 250px;
+                max-width: 220px;
             }
 
             .btn-group {
                 width: 100%;
                 justify-content: center;
+                gap: 0.5rem;
+            }
+
+            .btn-group button {
+                padding: 0.5rem 1rem;
+                font-size: 0.9rem;
             }
 
             .flex-row {
                 flex-direction: column;
                 align-items: flex-start;
                 width: 100%;
+                gap: 0.5rem;
             }
 
             input, select {
                 max-width: 100%;
                 width: 100%;
+                padding: 0.5rem;
             }
 
             .modal-content {
                 width: 90%;
                 margin: 30% auto;
+                padding: 1rem;
             }
 
             .tabs {
                 padding-bottom: 8px;
+                padding-left: 0.5rem;
+                padding-right: 0.5rem;
             }
 
             .tab {
-                padding: 0.5rem 0.8rem;
-                font-size: 0.9rem;
+                padding: 0.5rem 0.7rem;
+                font-size: 0.85rem;
+                white-space: nowrap;
             }
             
             .form-group {
                 width: 100%;
+                margin-bottom: 0.8rem;
             }
 
             .chord-button {
-                font-size: 0.9rem;
-                padding: 0.4rem 0.6rem;
+                font-size: 0.85rem;
+                padding: 0.3rem 0.5rem;
+            }
+            
+            .tempo-chip {
+                padding: 4px 8px !important;
+                font-size: 0.85rem !important;
+            }
+            
+            .saved-bpm-item {
+                padding: 0.5rem;
+            }
+            
+            .container {
+                padding: 0.5rem;
             }
         }
 
         @media (max-width: 480px) {
             .app-title h1 {
-                font-size: 1.3rem;
+                font-size: 1.1rem;
+            }
+            
+            header {
+                padding: 0.6rem;
             }
             
             .tabs {
@@ -610,32 +868,40 @@
                 scroll-behavior: smooth;
                 scrollbar-width: none;
                 -ms-overflow-style: none;
+                gap: 0.3rem;
             }
             
             .tabs::-webkit-scrollbar {
                 display: none;
             }
             
+            .tab {
+                padding: 0.4rem 0.6rem;
+                font-size: 0.8rem;
+            }
+            
             .result-display {
-                font-size: 2rem;
+                font-size: 1.8rem;
+                margin: 0.3rem 0;
             }
 
             .card-title {
-                font-size: 1.2rem;
+                font-size: 1.1rem;
+                margin-bottom: 0.8rem;
             }
             
             .visualizer-container {
-                height: 120px;
+                height: 100px;
             }
             
             .btn-group {
-                flex-direction: column;
-                align-items: center;
-                gap: 0.5rem;
+                flex-direction: row;
+                flex-wrap: wrap;
             }
             
             button {
-                width: 100%;
+                padding: 0.4rem 0.8rem;
+                font-size: 0.85rem;
             }
         }
 
@@ -647,9 +913,22 @@
             background-color: var(--bg-secondary);
             padding: 0.8rem;
             text-align: center;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             color: var(--text-secondary);
             box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            border-top: 1px solid rgba(155, 77, 202, 0.1);
+            z-index: 50;
+        }
+        
+        footer a {
+            color: var(--purple-light);
+            text-decoration: none;
+            transition: var(--transition-fast);
+        }
+        
+        footer a:hover {
+            color: var(--accent);
+            text-decoration: underline;
         }
     </style>
 </head>
@@ -657,7 +936,7 @@
     <header>
         <div class="app-title">
             <i class="fas fa-heartbeat"></i>
-            <h1>BPMit</h1>
+            <h1>BPM Detector Pro</h1>
         </div>
     </header>
 
@@ -761,7 +1040,7 @@
                     <span>Audio BPM Detection</span>
                 </div>
                 
-                <p>Analyze the BPM from your microphone input. Works with music playing through speakers, instruments, or any rhythmic sound.</p>
+                <p>BPM detection from any audio source. Automatically identifies common song tempos.</p>
                 
                 <div class="visualizer-container">
                     <canvas id="audioVisualizer" class="visualizer-canvas"></canvas>
@@ -864,7 +1143,7 @@
     </div>
 
     <footer>
-        BPM Detector - A tool for musicians | Made with ♥ by 13HATI
+        BPM Detector Pro - Professional Musician Tools | <a href="#">Support</a> | <a href="#">Privacy</a> | Made with ♥
     </footer>
 
     <script>
@@ -907,17 +1186,19 @@
             // Add both click and touch events for better mobile support
             let tapBPMCalculator = {
                 taps: [],
+                rawIntervals: [],
                 lastTapTime: 0,
                 tapConfidence: 0,
                 bpmHistory: [],
                 steadinessScore: 0,
-                tapCount: 0
+                tapCount: 0,
+                exactBpmValue: 0  // Store the exact, unrounded BPM
             };
             
             // Visual feedback indicator for tap accuracy
             const tapFeedbackEl = document.createElement('div');
             tapFeedbackEl.className = 'tap-feedback';
-            tapFeedbackEl.innerHTML = '<div class="tap-accuracy"></div><div class="tap-steadiness-bar"></div>';
+            tapFeedbackEl.innerHTML = '<div class="tap-accuracy"></div><div class="tap-steadiness-bar"></div><div class="exact-bpm"></div>';
             tapFeedbackEl.style.cssText = `
                 text-align: center;
                 margin: 8px 0;
@@ -929,6 +1210,7 @@
             
             const tapAccuracyEl = tapFeedbackEl.querySelector('.tap-accuracy');
             const tapSteadinessBar = tapFeedbackEl.querySelector('.tap-steadiness-bar');
+            const exactBpmEl = tapFeedbackEl.querySelector('.exact-bpm');
             
             tapSteadinessBar.style.cssText = `
                 height: 4px;
@@ -940,15 +1222,28 @@
                 transition: width 0.3s ease;
             `;
             
-            function updateTapFeedback(steadiness, message) {
+            exactBpmEl.style.cssText = `
+                font-family: monospace;
+                font-size: 0.9rem;
+                margin-top: 4px;
+            `;
+            
+            function updateTapFeedback(steadiness, message, exactBpm) {
                 tapSteadinessBar.style.width = (steadiness * 100) + '%';
                 tapAccuracyEl.textContent = message || (steadiness > 0.8 ? 'Great timing!' : 
                                              steadiness > 0.6 ? 'Good rhythm' : 
                                              steadiness > 0.4 ? 'Keep tapping...' : 'Tap steadily');
+                
+                if (exactBpm) {
+                    exactBpmEl.textContent = `Exact: ${exactBpm.toFixed(3)} BPM`;
+                } else {
+                    exactBpmEl.textContent = '';
+                }
             }
             
             function handleTap() {
-                const currentTime = new Date().getTime();
+                // Use performance.now() for microsecond precision
+                const currentTime = performance.now();
                 tapBPMCalculator.tapCount++;
                 
                 // Handle first tap
@@ -960,13 +1255,14 @@
                     return;
                 }
                 
-                // Calculate this interval
+                // Calculate this interval with high precision
                 const intervalMs = currentTime - tapBPMCalculator.lastTapTime;
                 tapBPMCalculator.lastTapTime = currentTime;
                 
                 // Reset if too long between taps
                 if (intervalMs > 3000) {
                     tapBPMCalculator.taps = [];
+                    tapBPMCalculator.rawIntervals = [];
                     tapBPMCalculator.bpmHistory = [];
                     tapBPMCalculator.steadinessScore = 0;
                     updateTapFeedback(0, 'Starting new rhythm...');
@@ -975,113 +1271,123 @@
                     return;
                 }
                 
-                // Add to tap history
+                // Add to tap and interval history
                 tapBPMCalculator.taps.push({
                     time: currentTime,
                     interval: intervalMs
                 });
                 
-                // Keep only recent taps (last 10 seconds)
-                const oldestAllowedTime = currentTime - 10000;
+                tapBPMCalculator.rawIntervals.push(intervalMs);
+                
+                // Keep only recent taps (last 8 seconds)
+                const oldestAllowedTime = currentTime - 8000;
                 tapBPMCalculator.taps = tapBPMCalculator.taps.filter(tap => tap.time >= oldestAllowedTime);
                 
-                // We need at least 3 taps to calculate a BPM
-                if (tapBPMCalculator.taps.length < 3) {
+                // Keep raw intervals manageable
+                if (tapBPMCalculator.rawIntervals.length > 16) {
+                    tapBPMCalculator.rawIntervals = tapBPMCalculator.rawIntervals.slice(-16);
+                }
+                
+                // We need at least 2 intervals to calculate a BPM
+                if (tapBPMCalculator.rawIntervals.length < 2) {
                     updateTapFeedback(0.2, 'Keep tapping...');
                     tapButton.classList.add('active');
                     setTimeout(() => tapButton.classList.remove('active'), 100);
                     return;
                 }
                 
-                // Extract just the intervals
-                const intervals = tapBPMCalculator.taps.map(tap => tap.interval);
+                // Extract intervals and calculate with multiple methods for cross-verification
+                const intervals = [...tapBPMCalculator.rawIntervals];
                 
-                // Calculate statistics
-                intervals.sort((a, b) => a - b);
+                // Calculate basic statistics
+                const sum = intervals.reduce((a, b) => a + b, 0);
+                const mean = sum / intervals.length;
+                const variance = intervals.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / intervals.length;
+                const stdDev = Math.sqrt(variance);
+                const cv = stdDev / mean; // Coefficient of variation - measure of steadiness
                 
-                // Remove extreme outliers (outside 1.5x IQR)
-                const q1Index = Math.floor(intervals.length * 0.25);
-                const q3Index = Math.floor(intervals.length * 0.75);
-                const q1 = intervals[q1Index];
-                const q3 = intervals[q3Index];
-                const iqr = q3 - q1;
-                const lowerBound = q1 - (iqr * 1.5);
-                const upperBound = q3 + (iqr * 1.5);
+                // Multiple calculation methods for cross-verification
                 
-                const validIntervals = intervals.filter(int => int >= lowerBound && int <= upperBound);
-                
-                if (validIntervals.length < 2) {
-                    // Not enough valid intervals yet
-                    tapButton.classList.add('active');
-                    setTimeout(() => tapButton.classList.remove('active'), 100);
-                    return;
+                // METHOD 1: Simple mean with outlier removal
+                let method1Bpm;
+                {
+                    // Remove extreme outliers (outside 2 standard deviations)
+                    const validIntervals = intervals.filter(i => 
+                        Math.abs(i - mean) <= stdDev * 2
+                    );
+                    
+                    if (validIntervals.length >= 2) {
+                        const validMean = validIntervals.reduce((a, b) => a + b, 0) / validIntervals.length;
+                        method1Bpm = 60000 / validMean;
+                    } else {
+                        method1Bpm = 60000 / mean;
+                    }
                 }
                 
-                // Calculate median (more stable than mean)
-                const medianInterval = validIntervals[Math.floor(validIntervals.length / 2)];
+                // METHOD 2: Median (more stable with occasional mistaps)
+                let method2Bpm;
+                {
+                    const sortedIntervals = [...intervals].sort((a, b) => a - b);
+                    const median = sortedIntervals[Math.floor(sortedIntervals.length / 2)];
+                    method2Bpm = 60000 / median;
+                }
                 
-                // Convert to BPM 
-                const exactBpm = 60000 / medianInterval;
-                
-                // For steadiness calculation
-                const meanInterval = validIntervals.reduce((sum, val) => sum + val, 0) / validIntervals.length;
-                const intervalVariance = validIntervals.reduce((sum, val) => sum + Math.pow(val - meanInterval, 2), 0) / validIntervals.length;
-                const intervalStdDev = Math.sqrt(intervalVariance);
-                const coefficientOfVariation = intervalStdDev / meanInterval;
-                
-                // Calculate a steadiness score (lower coefficient of variation = more steady)
-                // Convert to a 0-1 scale where 1 is perfect steadiness
-                tapBPMCalculator.steadinessScore = Math.min(1, Math.max(0, 1 - (coefficientOfVariation * 5)));
-                
-                // Quantize BPM to common values if we're close
-                // This helps stabilize around common tempos
-                let roundedBpm;
-                if (tapBPMCalculator.steadinessScore > 0.5) {
-                    // More aggressive quantization for steady tapping
-                    // Round to nearest integer BPM
-                    roundedBpm = Math.round(exactBpm);
-                    
-                    // Try to quantize to common BPM values if we're close
-                    const commonBpms = [60, 70, 75, 80, 90, 100, 110, 120, 125, 128, 130, 140, 150, 160, 170, 180];
-                    for (const commonBpm of commonBpms) {
-                        if (Math.abs(exactBpm - commonBpm) < 2) {
-                            roundedBpm = commonBpm;
-                            break;
+                // METHOD 3: Windowed average (recent weighted more heavily)
+                let method3Bpm;
+                {
+                    const recentIntervals = intervals.slice(-5);
+                    if (recentIntervals.length >= 2) {
+                        // Weight by recency - most recent gets highest weight
+                        let weightedSum = 0;
+                        let totalWeight = 0;
+                        
+                        for (let i = 0; i < recentIntervals.length; i++) {
+                            const weight = i + 1;  // 1, 2, 3, 4, 5
+                            weightedSum += recentIntervals[i] * weight;
+                            totalWeight += weight;
                         }
+                        
+                        const weightedMean = weightedSum / totalWeight;
+                        method3Bpm = 60000 / weightedMean;
+                    } else {
+                        method3Bpm = method2Bpm;
                     }
-                } else {
-                    // Less aggressive quantization for less steady tapping
-                    roundedBpm = Math.round(exactBpm);
                 }
                 
-                // Add to BPM history for stability
-                tapBPMCalculator.bpmHistory.push(roundedBpm);
-                if (tapBPMCalculator.bpmHistory.length > 5) {
-                    tapBPMCalculator.bpmHistory.shift();
-                }
+                // Consensus approach - get the most agreed-upon BPM value
+                // This helps filter out calculation artifacts
+                const methods = [method1Bpm, method2Bpm, method3Bpm];
                 
-                // Display the most common BPM from recent history
-                const bpmCounts = {};
-                let maxCount = 0;
-                let mostCommonBpm = roundedBpm;
+                // EXACT BPM: Calculate a precise BPM that isn't quantized
+                // Use median as basis but verify with other methods
+                const exactBpm = methods.sort((a, b) => {
+                    // Find the method that's closest to the others
+                    const aDiff = Math.abs(a - methods[0]) + Math.abs(a - methods[1]) + Math.abs(a - methods[2]);
+                    const bDiff = Math.abs(b - methods[0]) + Math.abs(b - methods[1]) + Math.abs(b - methods[2]);
+                    return aDiff - bDiff;
+                })[0];
                 
-                tapBPMCalculator.bpmHistory.forEach(bpm => {
-                    bpmCounts[bpm] = (bpmCounts[bpm] || 0) + 1;
-                    if (bpmCounts[bpm] > maxCount) {
-                        maxCount = bpmCounts[bpm];
-                        mostCommonBpm = bpm;
-                    }
-                });
+                // Store the exact BPM for display
+                tapBPMCalculator.exactBpmValue = exactBpm;
                 
-                // Validate BPM is within reasonable range
-                if (mostCommonBpm >= 30 && mostCommonBpm <= 300) {
-                    bpmDisplay.textContent = mostCommonBpm;
-                    
-                    // Update confidence display
-                    updateTapFeedback(tapBPMCalculator.steadinessScore);
-                }
+                // Calculate steadiness score from coefficient of variation
+                // Lower CV = more steady tapping = higher score
+                tapBPMCalculator.steadinessScore = Math.min(1, Math.max(0, 1 - (cv * 5)));
                 
-                // Visual feedback on tap
+                // For display, we round to one decimal place for precision without creating jitter
+                const displayBpm = Math.round(exactBpm * 10) / 10;
+                
+                // Display the BPM
+                bpmDisplay.textContent = displayBpm;
+                
+                // Update confidence display
+                updateTapFeedback(
+                    tapBPMCalculator.steadinessScore, 
+                    null, 
+                    exactBpm
+                );
+                
+                // Visual feedback
                 tapButton.classList.add('active');
                 setTimeout(() => tapButton.classList.remove('active'), 100);
             }
@@ -1090,14 +1396,17 @@
             resetButton.addEventListener('click', () => {
                 tapBPMCalculator = {
                     taps: [],
+                    rawIntervals: [],
                     lastTapTime: 0,
                     tapConfidence: 0,
                     bpmHistory: [],
                     steadinessScore: 0,
-                    tapCount: 0
+                    tapCount: 0,
+                    exactBpmValue: 0
                 };
                 bpmDisplay.textContent = '0';
                 updateTapFeedback(0, 'Tap to detect BPM');
+                exactBpmEl.textContent = '';
             });
             
             // Add tap button styles for visual feedback
@@ -1244,27 +1553,76 @@
                     // Reset the display
                     audioBpmDisplay.textContent = '0';
                     
-                    // Add a status indicator
+                    // Status indicator
                     const statusEl = document.createElement('div');
-                    statusEl.id = 'statusIndicator';
+                    statusEl.id = 'detectionStatus';
                     statusEl.style.cssText = `
                         margin: 10px 0;
                         text-align: center;
-                        color: var(--accent);
+                        color: var(--text-secondary);
                         font-size: 0.9rem;
-                        font-weight: bold;
+                        font-weight: 500;
                     `;
-                    statusEl.textContent = 'Initializing...';
+                    statusEl.textContent = 'Listening...';
+                    
+                    // Create professional results container
+                    const resultsContainer = document.createElement('div');
+                    resultsContainer.id = 'audioResultsContainer';
+                    resultsContainer.style.cssText = `
+                        margin: 15px 0;
+                        padding: 12px;
+                        background: var(--bg-primary);
+                        border-radius: 8px;
+                        border: 1px solid rgba(155, 77, 202, 0.2);
+                    `;
+                    
+                    // Add exact BPM display
+                    const exactBpmEl = document.createElement('div');
+                    exactBpmEl.id = 'exactAudioBpm';
+                    exactBpmEl.style.cssText = `
+                        font-family: monospace;
+                        font-size: 0.9rem;
+                        color: var(--text-secondary);
+                        margin-bottom: 10px;
+                        text-align: center;
+                    `;
+                    
+                    // Create suggested tempos container with professional styling
+                    const suggestedTemposEl = document.createElement('div');
+                    suggestedTemposEl.id = 'suggestedTempos';
+                    suggestedTemposEl.style.cssText = `
+                        display: flex;
+                        flex-wrap: wrap;
+                        justify-content: center;
+                        gap: 8px;
+                        margin-top: 8px;
+                    `;
+                    
+                    // Add heading for suggestions
+                    const suggestionsHeading = document.createElement('div');
+                    suggestionsHeading.textContent = 'Common Tempos';
+                    suggestionsHeading.style.cssText = `
+                        width: 100%;
+                        text-align: center;
+                        font-size: 0.9rem;
+                        color: var(--text-secondary);
+                        margin-bottom: 5px;
+                    `;
+                    
+                    suggestedTemposEl.appendChild(suggestionsHeading);
+                    resultsContainer.appendChild(exactBpmEl);
+                    resultsContainer.appendChild(suggestedTemposEl);
                     
                     const visualizerContainer = document.querySelector('.visualizer-container');
                     visualizerContainer.parentNode.insertBefore(statusEl, visualizerContainer.nextSibling);
+                    visualizerContainer.parentNode.insertBefore(resultsContainer, statusEl.nextSibling);
                     
-                    // Request microphone access with optimal settings
+                    // Request microphone access with settings focused on clarity
                     audioStream = await navigator.mediaDevices.getUserMedia({ 
                         audio: { 
                             echoCancellation: false,
                             noiseSuppression: false,
-                            autoGainControl: true
+                            autoGainControl: true  // Better for music through speakers
                         } 
                     });
                     
@@ -1277,374 +1635,431 @@
                         audioContext.resume();
                     }
                     
-                    // Create audio processing chain
+                    // Create audio processing nodes
                     const source = audioContext.createMediaStreamSource(audioStream);
-                    audioAnalyser = audioContext.createAnalyser();
-                    audioAnalyser.fftSize = 8192; 
-                    audioAnalyser.smoothingTimeConstant = 0.5; // Balance between responsiveness and stability
                     
+                    // Analyzer optimized for beat detection
+                    audioAnalyser = audioContext.createAnalyser();
+                    audioAnalyser.fftSize = 4096; // Good balance between precision and performance
+                    audioAnalyser.smoothingTimeConstant = 0.4; // Balanced smoothing
+                    
+                    // Connect source to analyzer
                     source.connect(audioAnalyser);
                     
                     // Create data arrays
                     audioData = new Uint8Array(audioAnalyser.frequencyBinCount);
                     const timeData = new Uint8Array(audioAnalyser.frequencyBinCount);
                     
-                    // =========================================================
-                    // Initialize a much more precise BPM detection system
-                    // =========================================================
-                    
-                    // Create specialized BPM detector with emphasis on precision
-                    let preciseBpmDetector = {
-                        // Configuration
-                        minBpm: 60,
-                        maxBpm: 200,
-                        historySeconds: 10,
-                        tempoChangeThreshold: 1.5, // BPM must be stable within this threshold
-                        
-                        // Analysis state
-                        energyHistory: [],         // Energy measurements over time
-                        peakHistory: [],           // Detected peaks/onsets with timestamps
-                        bpmCandidates: {},         // Possible BPM values with confidence
-                        bpmHistory: [],            // Recent BPM calculations
-                        primaryBpm: 0,             // Most confident BPM value
-                        confidence: 0,             // How certain we are of the BPM (0-1)
-                        
-                        // Common BPM values for quantization (more precise than before)
-                        commonBpms: [
-                            60, 62, 65, 68, 70, 72, 75, 78, 80, 
-                            85, 87, 90, 92, 95, 96, 98, 100, 
-                            105, 110, 112, 115, 120, 124, 125, 126, 128, 130, 
-                            132, 135, 138, 140, 145, 150, 
-                            152, 154, 155, 160, 165, 170, 172, 174, 175, 178, 180, 
-                            184, 185, 190, 200
+                    // Initialize a direct, simplified tempo detector focused on accuracy
+                    const simpleTempoDetector = {
+                        // Strictly focused list of industry-standard tempos for music
+                        popularTempos: [
+                            60, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 
+                            120, 122, 124, 125, 126, 128, 130, 132, 134, 136, 
+                            138, 140, 142, 144, 145, 150, 152, 154, 155, 160, 
+                            162, 165, 168, 170, 172, 174, 175, 180, 185, 190
                         ],
                         
-                        // Method to identify precise onsets/beats
-                        detectOnsets: function(frequencyData, timeData, timestamp) {
-                            // Calculate multiple band energies (bass, mid, high) with strong emphasis on bass
-                            const bandEnergies = {
-                                bass: 0,   // 20-200Hz (where most beats live)
-                                lowMid: 0, // 200-500Hz
-                                highMid: 0 // 500-2000Hz
-                            };
+                        // Core detection values
+                        beatTimes: [],              // timestamps of detected beats
+                        energyHistory: [],          // energy level history
+                        beatIntervals: [],          // intervals between detected beats
+                        beatStrengths: [],          // strength of each detected beat
+                        tempoEstimates: [],         // recent tempo calculations
+                        
+                        // State tracking
+                        lastProcessTime: 0,
+                        processingInterval: 30,     // ms between audio processing
+                        lastBeatTime: 0,
+                        minBeatInterval: 200,       // 300 BPM max (200ms between beats)
+                        
+                        // Detection parameters
+                        sensitivity: 1.15,          // beat detection sensitivity multiplier
+                        
+                        // Detection results
+                        currentTempo: 0,
+                        exactTempo: 0,
+                        confidence: 0,
+                        closestPopularTempo: 0,
+                        tempoAlternatives: [],
+                        
+                        // Process audio data to find beats and tempo
+                        processAudio: function(frequencyData, timeData, sampleRate) {
+                            const now = performance.now();
                             
-                            // Extract focused frequency ranges
-                            // For 8192 FFT size at 44.1kHz:
-                            // bin index ≈ frequency * 8192 / 44100
-                            const bassRange = [1, 40];    // ~20-200Hz
-                            const lowMidRange = [40, 90]; // ~200-500Hz
-                            const highMidRange = [90, 360]; // ~500-2000Hz
+                            // Extract energy from bass and low-mid frequency bands (where most beats occur)
+                            // For 44.1kHz audio with 4096 FFT, bins approximately:
+                            // bin = frequency * fftSize / (sampleRate/2)
+                            const lowBin = Math.floor(60 * audioAnalyser.fftSize / (sampleRate/2));    // ~60Hz
+                            const highBin = Math.ceil(250 * audioAnalyser.fftSize / (sampleRate/2));   // ~250Hz
                             
-                            // Calculate energy in each band
-                            for (let i = bassRange[0]; i < bassRange[1]; i++) {
-                                bandEnergies.bass += frequencyData[i];
+                            // Calculate average energy in beat-relevant frequencies
+                            let beatEnergy = 0;
+                            for (let i = lowBin; i <= highBin; i++) {
+                                beatEnergy += frequencyData[i];
                             }
-                            bandEnergies.bass /= (bassRange[1] - bassRange[0]);
+                            beatEnergy /= (highBin - lowBin + 1);
                             
-                            for (let i = lowMidRange[0]; i < lowMidRange[1]; i++) {
-                                bandEnergies.lowMid += frequencyData[i];
+                            // Also look at full spectrum for overall energy
+                            let fullEnergy = 0;
+                            for (let i = 0; i < frequencyData.length / 4; i++) { // only look at lower quarter of spectrum
+                                fullEnergy += frequencyData[i];
                             }
-                            bandEnergies.lowMid /= (lowMidRange[1] - lowMidRange[0]);
+                            fullEnergy /= frequencyData.length / 4;
                             
-                            for (let i = highMidRange[0]; i < highMidRange[1]; i++) {
-                                bandEnergies.highMid += frequencyData[i];
-                            }
-                            bandEnergies.highMid /= (highMidRange[1] - highMidRange[0]);
+                            // Combined energy (biased toward beat frequencies)
+                            const energy = (beatEnergy * 0.7) + (fullEnergy * 0.3);
                             
-                            // Combine weighted energies with strong emphasis on bass
-                            const combinedEnergy = (bandEnergies.bass * 0.7) + 
-                                                  (bandEnergies.lowMid * 0.2) + 
-                                                  (bandEnergies.highMid * 0.1);
-                            
-                            // Store combined energy in history with timestamp
+                            // Store energy in history
                             this.energyHistory.push({
-                                time: timestamp,
-                                energy: combinedEnergy,
-                                bands: bandEnergies
-                            });
-                            
-                            // Limit history length
-                            const oldestAllowed = timestamp - (this.historySeconds * 1000);
-                            this.energyHistory = this.energyHistory.filter(e => e.time >= oldestAllowed);
-                            
-                            // Need enough history before detecting peaks
-                            if (this.energyHistory.length < 10) return false;
-                            
-                            // Dynamic threshold calculation
-                            const recentEnergies = this.energyHistory.slice(-20);
-                            
-                            // Calculate moving average (weighted toward recent values)
-                            let weightedSum = 0;
-                            let weightSum = 0;
-                            
-                            for (let i = 0; i < recentEnergies.length; i++) {
-                                const weight = 0.5 + (i / recentEnergies.length) * 0.5;  // 0.5 to 1.0
-                                weightedSum += recentEnergies[i].energy * weight;
-                                weightSum += weight;
-                            }
-                            
-                            const movingAvg = weightedSum / weightSum;
-                            const threshold = movingAvg * 1.4;  // 40% above moving average
-                            
-                            // Get latest 5 entries for onset detection
-                            const recent = this.energyHistory.slice(-5);
-                            
-                            // Check if current energy is a peak (higher than previous and next)
-                            const current = recent[recent.length - 1];
-                            const previous = recent[recent.length - 2];
-                            
-                            // Detect onset (rising edge with sufficient energy)
-                            const isPeak = current.energy > threshold && 
-                                          current.energy > previous.energy * 1.2 && 
-                                          current.energy > 30; // Absolute minimum threshold
-                            
-                            if (isPeak) {
-                                // Check if it's a new peak (not too close to last one)
-                                const lastPeakTime = this.peakHistory.length > 0 ? 
-                                    this.peakHistory[this.peakHistory.length - 1].time : 0;
-                                
-                                // Prevent peaks too close together (< 250ms = 240 BPM max)
-                                if (timestamp - lastPeakTime > 250) {
-                                    this.peakHistory.push({
-                                        time: timestamp,
-                                        energy: current.energy
-                                    });
-                                    
-                                    // Limit peak history
-                                    this.peakHistory = this.peakHistory.filter(p => p.time >= oldestAllowed);
-                                    
-                                    return true; // New peak detected
-                                }
-                            }
-                            
-                            return false;
-                        },
-                        
-                        // Method to calculate precise BPM from peaks
-                        calculateBPM: function() {
-                            // Need enough peaks to calculate
-                            if (this.peakHistory.length < 4) return null;
-                            
-                            // Calculate all intervals between peaks (up to 3 seconds apart)
-                            const intervals = [];
-                            const maxInterval = 3000; // Max 3 seconds between beats = 20 BPM
-                            
-                            for (let i = 0; i < this.peakHistory.length; i++) {
-                                for (let j = i + 1; j < this.peakHistory.length; j++) {
-                                    const interval = this.peakHistory[j].time - this.peakHistory[i].time;
-                                    
-                                    // Filter to reasonable intervals
-                                    if (interval > 200 && interval <= maxInterval) {
-                                        intervals.push(interval);
-                                    }
-                                    
-                                    // Stop if interval is too large
-                                    if (interval > maxInterval) break;
-                                }
-                            }
-                            
-                            if (intervals.length < 3) return null;
-                            
-                            // Group intervals by similarity (within 10% of each other)
-                            const groupedIntervals = {};
-                            intervals.forEach(interval => {
-                                // Convert to BPM first
-                                const exactBpm = 60000 / interval;
-                                
-                                // Find nearest common BPM
-                                let closestBpm = this.commonBpms[0];
-                                let minDiff = Math.abs(exactBpm - closestBpm);
-                                
-                                for (let i = 1; i < this.commonBpms.length; i++) {
-                                    const diff = Math.abs(exactBpm - this.commonBpms[i]);
-                                    if (diff < minDiff) {
-                                        minDiff = diff;
-                                        closestBpm = this.commonBpms[i];
-                                    }
-                                }
-                                
-                                // Only quantize if we're close (within 3 BPM)
-                                const bpmToUse = (minDiff <= 3) ? closestBpm : Math.round(exactBpm);
-                                
-                                // Create or update group
-                                const key = bpmToUse.toString();
-                                if (!groupedIntervals[key]) {
-                                    groupedIntervals[key] = {
-                                        bpm: bpmToUse,
-                                        exactBpms: [exactBpm],
-                                        count: 1
-                                    };
-                                } else {
-                                    groupedIntervals[key].exactBpms.push(exactBpm);
-                                    groupedIntervals[key].count++;
-                                }
-                            });
-                            
-                            // Convert to array and sort by frequency
-                            const bpmCandidates = Object.values(groupedIntervals)
-                                .map(group => ({
-                                    bpm: group.bpm,
-                                    count: group.count,
-                                    exactAvg: group.exactBpms.reduce((a, b) => a + b, 0) / group.exactBpms.length,
-                                    // Calculate variance (lower = more consistent)
-                                    variance: group.exactBpms.length > 1 ? 
-                                        group.exactBpms.reduce((sum, bpm) => {
-                                            return sum + Math.pow(bpm - group.exactBpms[0], 2);
-                                        }, 0) / group.exactBpms.length : 0
-                                }))
-                                .sort((a, b) => b.count - a.count);
-                            
-                            // Update candidates for visualization
-                            this.bpmCandidates = bpmCandidates.slice(0, 5);
-                            
-                            // No candidates found
-                            if (bpmCandidates.length === 0) return null;
-                            
-                            // Add to BPM history for stability verification
-                            const now = Date.now();
-                            const topCandidate = bpmCandidates[0].bpm;
-                            
-                            this.bpmHistory.push({
                                 time: now,
-                                bpm: topCandidate,
-                                weight: bpmCandidates[0].count,
-                                variance: bpmCandidates[0].variance
+                                energy: energy
                             });
                             
-                            // Keep history limited
-                            const oldestBpmTime = now - 5000; // Last 5 seconds
-                            this.bpmHistory = this.bpmHistory.filter(b => b.time >= oldestBpmTime);
-                            
-                            // Need enough history to verify stability
-                            if (this.bpmHistory.length < 3) return topCandidate;
-                            
-                            // Check for stability in recent BPM calculations
-                            const recentBpms = {};
-                            let totalWeight = 0;
-                            
-                            this.bpmHistory.forEach(item => {
-                                // Higher weight for more recent entries
-                                const recencyWeight = Math.exp(-(now - item.time) / 2000);
-                                const effectiveWeight = item.weight * recencyWeight;
-                                
-                                if (!recentBpms[item.bpm]) {
-                                    recentBpms[item.bpm] = effectiveWeight;
-                                } else {
-                                    recentBpms[item.bpm] += effectiveWeight;
-                                }
-                                
-                                totalWeight += effectiveWeight;
-                            });
-                            
-                            // Convert to array and sort
-                            const recentBpmList = Object.entries(recentBpms)
-                                .map(([bpm, weight]) => ({
-                                    bpm: parseInt(bpm),
-                                    weight,
-                                    confidence: weight / totalWeight
-                                }))
-                                .sort((a, b) => b.weight - a.weight);
-                            
-                            // No stable BPM found
-                            if (recentBpmList.length === 0) return topCandidate;
-                            
-                            // Calculate overall confidence (higher for stable readings)
-                            const stableBpm = recentBpmList[0].bpm;
-                            this.confidence = recentBpmList[0].confidence;
-                            
-                            // If we have a previous primary BPM, check if we should change
-                            if (this.primaryBpm > 0) {
-                                // Only change if confidence is high enough or BPM is very close
-                                if (this.confidence > 0.6 || 
-                                    Math.abs(stableBpm - this.primaryBpm) <= this.tempoChangeThreshold) {
-                                    this.primaryBpm = stableBpm;
-                                }
-                                // Otherwise keep existing BPM for stability
-                            } else {
-                                // First stable BPM
-                                this.primaryBpm = stableBpm;
+                            // Keep history limited to recent values
+                            const historyWindow = 3000; // 3 seconds
+                            while (this.energyHistory.length > 0 && 
+                                   now - this.energyHistory[0].time > historyWindow) {
+                                this.energyHistory.shift();
                             }
                             
-                            return this.primaryBpm;
-                        }
-                    };
-                    
-                    statusEl.textContent = 'Analyzing audio...';
-                    
-                    // Main detection loop - now with more precision
-                    function runPreciseDetection() {
-                        if (!isDetecting) return;
-                        
-                        try {
-                            const now = Date.now();
+                            // Need enough history to detect beats
+                            if (this.energyHistory.length < 10) {
+                                return null;
+                            }
                             
-                            // Get both frequency and time domain data
-                            audioAnalyser.getByteFrequencyData(audioData);
-                            audioAnalyser.getByteTimeDomainData(timeData);
+                            // Calculate adaptive threshold using recent energy history
+                            // This automatically adjusts to music with different volume/energy levels
+                            const recentSamples = this.energyHistory.slice(-20);
+                            const energyValues = recentSamples.map(s => s.energy);
                             
-                            // Detect onsets with precise algorithm
-                            const foundOnset = preciseBpmDetector.detectOnsets(audioData, timeData, now);
+                            // Calculate mean and standard deviation
+                            const energyMean = energyValues.reduce((sum, val) => sum + val, 0) / energyValues.length;
+                            const energyVariance = energyValues.reduce((sum, val) => sum + Math.pow(val - energyMean, 2), 0) / energyValues.length;
+                            const energyStdDev = Math.sqrt(energyVariance);
                             
-                            // Visual feedback for detected beat
-                            if (foundOnset) {
+                            // Threshold = mean + (stdDev * sensitivity)
+                            const threshold = energyMean + (energyStdDev * this.sensitivity);
+                            
+                            // Get current and recent energy samples
+                            const currentEnergy = this.energyHistory[this.energyHistory.length - 1].energy;
+                            const prevEnergy1 = this.energyHistory.length > 1 ? this.energyHistory[this.energyHistory.length - 2].energy : 0;
+                            const prevEnergy2 = this.energyHistory.length > 2 ? this.energyHistory[this.energyHistory.length - 3].energy : 0;
+                            
+                            // Detect beat: energy rising and exceeding threshold
+                            const isRising = currentEnergy > prevEnergy1 && prevEnergy1 >= prevEnergy2;
+                            const isPeakEnergy = currentEnergy > threshold;
+                            
+                            // Detect beat if conditions met and enough time since last beat
+                            if (isRising && isPeakEnergy && (now - this.lastBeatTime >= this.minBeatInterval)) {
+                                this.lastBeatTime = now;
+                                
+                                // Store beat with timestamp and strength
+                                const beatStrength = (currentEnergy - threshold) / threshold; // How much beat exceeds threshold
+                                
+                                this.beatTimes.push(now);
+                                this.beatStrengths.push(beatStrength);
+                                
+                                // Keep beat history manageable
+                                const beatHistoryWindow = 8000; // 8 seconds
+                                while (this.beatTimes.length > 0 && now - this.beatTimes[0] > beatHistoryWindow) {
+                                    this.beatTimes.shift();
+                                    this.beatStrengths.shift();
+                                }
+                                
+                                // Calculate intervals between consecutive beats
+                                if (this.beatTimes.length >= 2) {
+                                    const mostRecentInterval = this.beatTimes[this.beatTimes.length - 1] - 
+                                                             this.beatTimes[this.beatTimes.length - 2];
+                                    
+                                    if (mostRecentInterval >= 200 && mostRecentInterval <= 2000) { // 30-300 BPM
+                                        this.beatIntervals.push(mostRecentInterval);
+                                        
+                                        // Limit beat intervals
+                                        if (this.beatIntervals.length > 20) {
+                                            this.beatIntervals.shift();
+                                        }
+                                    }
+                                }
+                                
+                                // Visual feedback for beat detection
                                 metronomeDot.classList.add('active');
                                 setTimeout(() => metronomeDot.classList.remove('active'), 100);
                             }
                             
-                            // Only recalculate BPM on beats or periodically
-                            if (foundOnset || now % 500 < 30) {  // Every ~500ms
-                                const bpm = preciseBpmDetector.calculateBPM();
+                            // Calculate tempo if we have enough intervals
+                            if (this.beatIntervals.length >= 4) {
+                                return this.calculateTempo();
+                            }
+                            
+                            return null;
+                        },
+                        
+                        // Calculate tempo from beat intervals
+                        calculateTempo: function() {
+                            if (this.beatIntervals.length < 4) return null;
+                            
+                            // Simple median-based calculation
+                            // Median is more stable than mean with occasional irregular beats
+                            const sortedIntervals = [...this.beatIntervals].sort((a, b) => a - b);
+                            const medianInterval = sortedIntervals[Math.floor(sortedIntervals.length / 2)];
+                            
+                            // Convert to BPM: (60,000 ms per minute) / (ms per beat)
+                            const rawTempo = 60000 / medianInterval;
+                            
+                            // Store the exact (unrounded) tempo
+                            this.exactTempo = rawTempo;
+                            
+                            // Calculate consistency (lower variance = higher confidence)
+                            const sum = this.beatIntervals.reduce((a, b) => a + b, 0);
+                            const mean = sum / this.beatIntervals.length;
+                            const variance = this.beatIntervals.reduce((s, i) => s + Math.pow(i - mean, 2), 0) / this.beatIntervals.length;
+                            const stdDev = Math.sqrt(variance);
+                            const cv = stdDev / mean; // Coefficient of variation
+                            
+                            // Convert to confidence score (lower cv = higher confidence)
+                            this.confidence = Math.min(1, Math.max(0, 1 - (cv * 2)));
+                            
+                            // Round to 1 decimal place for display
+                            this.currentTempo = Math.round(rawTempo * 10) / 10;
+                            
+                            // Find closest popular tempo
+                            this.closestPopularTempo = this.findClosestPopularTempo(rawTempo);
+                            
+                            // Generate alternative tempos (half, double, etc.)
+                            this.tempoAlternatives = this.generateAlternatives(rawTempo);
+                            
+                            // Store this tempo estimate for stability analysis
+                            this.tempoEstimates.push({
+                                tempo: this.currentTempo,
+                                exact: rawTempo,
+                                time: performance.now(),
+                                confidence: this.confidence
+                            });
+                            
+                            // Limit history
+                            if (this.tempoEstimates.length > 10) {
+                                this.tempoEstimates.shift();
+                            }
+                            
+                            return {
+                                tempo: this.currentTempo,
+                                exactTempo: this.exactTempo,
+                                confidence: this.confidence,
+                                popularTempo: this.closestPopularTempo,
+                                alternatives: this.tempoAlternatives
+                            };
+                        },
+                        
+                        // Find the closest tempo from the popular tempos list
+                        findClosestPopularTempo: function(tempo) {
+                            return this.popularTempos.reduce((prev, curr) => {
+                                return (Math.abs(curr - tempo) < Math.abs(prev - tempo)) ? curr : prev;
+                            });
+                        },
+                        
+                        // Generate alternative tempo interpretations
+                        generateAlternatives: function(tempo) {
+                            const alternatives = [];
+                            
+                            // Check half, double, 2/3 and 3/2 tempos
+                            const factors = [0.5, 2, 2/3, 3/2];
+                            
+                            for (const factor of factors) {
+                                const altTempo = tempo * factor;
                                 
-                                if (bpm && bpm >= preciseBpmDetector.minBpm && bpm <= preciseBpmDetector.maxBpm) {
-                                    // Update display only if confidence is reasonable
-                                    if (preciseBpmDetector.confidence >= 0.4) {
-                                        audioBpmDisplay.textContent = bpm;
-                                        
-                                        // Update status with confidence
-                                        if (preciseBpmDetector.confidence > 0.7) {
-                                            statusEl.textContent = 'High confidence: ' + bpm + ' BPM';
-                                            statusEl.style.color = '#50fa7b'; // Green
-                                        } else if (preciseBpmDetector.confidence > 0.5) {
-                                            statusEl.textContent = 'Medium confidence: ' + bpm + ' BPM';
-                                            statusEl.style.color = '#ffb86c'; // Orange
-                                        } else {
-                                            statusEl.textContent = 'Detected: ' + bpm + ' BPM';
-                                            statusEl.style.color = '#ff79c6'; // Pink
-                                        }
-                                        
-                                        // Enable save button once we have a confident reading
-                                        saveAudioBpmButton.disabled = false;
+                                // Only suggest if it's in a reasonable range
+                                if (altTempo >= 60 && altTempo <= 200) {
+                                    const closestPopular = this.findClosestPopularTempo(altTempo);
+                                    
+                                    // Only add if not already in list and not too close to primary
+                                    if (!alternatives.includes(closestPopular) && 
+                                        Math.abs(closestPopular - this.closestPopularTempo) > 3) {
+                                        alternatives.push(closestPopular);
                                     }
                                 }
                             }
+                            
+                            // Sort by proximity to original tempo
+                            alternatives.sort((a, b) => {
+                                return Math.abs(tempo - a) - Math.abs(tempo - b);
+                            });
+                            
+                            // Return top 3 alternatives
+                            return alternatives.slice(0, 3);
+                        }
+                    };
+                    
+                    // Start audio analysis
+                    isDetecting = true;
+                    audioBPMDetector = simpleTempoDetector;
+                    
+                    // Simplified detection function
+                    function analyzeAudio() {
+                        if (!isDetecting) return;
+                        
+                        try {
+                            const now = performance.now();
+                            
+                            // Only process at regular intervals
+                            if (now - simpleTempoDetector.lastProcessTime < simpleTempoDetector.processingInterval) {
+                                requestAnimationFrame(analyzeAudio);
+                                return;
+                            }
+                            
+                            simpleTempoDetector.lastProcessTime = now;
+                            
+                            // Get frequency and time data
+                            audioAnalyser.getByteFrequencyData(audioData);
+                            audioAnalyser.getByteTimeDomainData(timeData);
+                            
+                            // Process audio and detect tempo
+                            const result = simpleTempoDetector.processAudio(
+                                audioData, 
+                                timeData, 
+                                audioContext.sampleRate
+                            );
+                            
+                            // Update UI with results
+                            if (result) {
+                                // Update main BPM display with closest popular tempo
+                                audioBpmDisplay.textContent = result.popularTempo;
+                                
+                                // Update exact BPM display
+                                const exactBpmEl = document.getElementById('exactAudioBpm');
+                                if (exactBpmEl) {
+                                    exactBpmEl.textContent = `Exact: ${result.exactTempo.toFixed(1)} BPM`;
+                                }
+                                
+                                // Update suggested tempos
+                                const suggestedTemposEl = document.getElementById('suggestedTempos');
+                                if (suggestedTemposEl && suggestedTemposEl.children.length <= 1) {
+                                    // Create all needed tempo buttons
+                                    const allTempos = [result.popularTempo, ...result.alternatives];
+                                    
+                                    allTempos.forEach(tempo => {
+                                        const chip = document.createElement('button');
+                                        chip.className = 'tempo-chip';
+                                        chip.textContent = `${tempo}`;
+                                        
+                                        // Style the chip
+                                        chip.style.cssText = `
+                                            background: ${tempo === result.popularTempo ? 'var(--purple-primary)' : 'var(--bg-secondary)'};
+                                            color: ${tempo === result.popularTempo ? 'white' : 'var(--text-primary)'};
+                                            padding: 6px 12px;
+                                            border-radius: 6px;
+                                            border: none;
+                                            font-weight: ${tempo === result.popularTempo ? 'bold' : 'normal'};
+                                            font-size: 0.95rem;
+                                            cursor: pointer;
+                                            transition: all 0.2s ease;
+                                        `;
+                                        
+                                        // Hover effect
+                                        chip.onmouseover = () => {
+                                            chip.style.backgroundColor = tempo === result.popularTempo ? 
+                                                'var(--purple-secondary)' : 'var(--bg-primary)';
+                                        };
+                                        
+                                        chip.onmouseout = () => {
+                                            chip.style.backgroundColor = tempo === result.popularTempo ? 
+                                                'var(--purple-primary)' : 'var(--bg-secondary)';
+                                        };
+                                        
+                                        // Click handler to use this tempo
+                                        chip.addEventListener('click', () => {
+                                            audioBpmDisplay.textContent = tempo;
+                                            // Also update metronome
+                                            bpmSlider.value = tempo;
+                                            metronomeBpmDisplay.textContent = tempo;
+                                            showNotification(`Set to ${tempo} BPM`, 'success');
+                                        });
+                                        
+                                        suggestedTemposEl.appendChild(chip);
+                                    });
+                                    
+                                    // Add popular presets that are not already shown
+                                    const commonPresets = [60, 80, 100, 120, 128, 140, 160, 175];
+                                    commonPresets.forEach(preset => {
+                                        // Only add if not already in our selections
+                                        if (!allTempos.includes(preset)) {
+                                            const presetChip = document.createElement('button');
+                                            presetChip.className = 'tempo-chip preset';
+                                            presetChip.textContent = `${preset}`;
+                                            
+                                            // Style the preset differently
+                                            presetChip.style.cssText = `
+                                                background: var(--bg-secondary);
+                                                color: var(--text-secondary);
+                                                padding: 5px 10px;
+                                                border-radius: 6px;
+                                                border: 1px solid rgba(155, 77, 202, 0.3);
+                                                font-size: 0.9rem;
+                                                cursor: pointer;
+                                                transition: all 0.2s ease;
+                                            `;
+                                            
+                                            // Hover effect
+                                            presetChip.onmouseover = () => {
+                                                presetChip.style.backgroundColor = 'var(--bg-primary)';
+                                            };
+                                            
+                                            presetChip.onmouseout = () => {
+                                                presetChip.style.backgroundColor = 'var(--bg-secondary)';
+                                            };
+                                            
+                                            // Click handler
+                                            presetChip.addEventListener('click', () => {
+                                                audioBpmDisplay.textContent = preset;
+                                                // Also update metronome
+                                                bpmSlider.value = preset;
+                                                metronomeBpmDisplay.textContent = preset;
+                                                showNotification(`Set to ${preset} BPM`, 'success');
+                                            });
+                                            
+                                            suggestedTemposEl.appendChild(presetChip);
+                                        }
+                                    });
+                                }
+                                
+                                // Update status
+                                const statusEl = document.getElementById('detectionStatus');
+                                if (statusEl) {
+                                    const beatsDetected = simpleTempoDetector.beatTimes.length;
+                                    const confidenceText = result.confidence > 0.8 ? "High confidence" :
+                                                         result.confidence > 0.5 ? "Medium confidence" : 
+                                                         "Refining...";
+                                    
+                                    statusEl.textContent = `Detected tempo: ${result.popularTempo} BPM (${confidenceText})`;
+                                    statusEl.style.color = result.confidence > 0.7 ? 'var(--accent)' : 'var(--text-secondary)';
+                                }
+                                
+                                // Enable save button
+                                saveAudioBpmButton.disabled = false;
+                            }
                         } catch (error) {
-                            console.error('Error in precise audio detection:', error);
+                            console.error('Error in audio analysis:', error);
                         }
                         
-                        // Fast update rate for more precision
-                        requestAnimationFrame(runPreciseDetection);
+                        requestAnimationFrame(analyzeAudio);
                     }
                     
-                    // Set up visualization and detection
-                    isDetecting = true;
-                    runPreciseDetection();
+                    // Start analysis
+                    analyzeAudio();
                     visualizeAudio();
                     
-                    // Replace the standard detector with our precise one
-                    audioBPMDetector = preciseBpmDetector;
-                    
-                    // Update UI state
+                    // Update UI
                     startAudioButton.disabled = true;
                     stopAudioButton.disabled = false;
-                    saveAudioBpmButton.disabled = true; // Enable only when confident
                     
                     // Show notification
-                    showNotification('Audio analysis started', 'success');
+                    showNotification('Listening for beats...', 'success');
                 } catch (error) {
                     console.error('Error accessing microphone:', error);
                     showNotification('Could not access microphone', 'error');
                     
-                    const statusEl = document.getElementById('statusIndicator');
+                    // Clean up status element
+                    const statusEl = document.getElementById('detectionStatus');
                     if (statusEl) statusEl.remove();
                 }
             });
@@ -1869,169 +2284,199 @@
                     // Get frequency data
                     audioAnalyser.getByteFrequencyData(audioData);
                     
-                    // Create frequency visualization with multiple bands highlighted
-                    const lowGradient = audioContext2.createLinearGradient(0, 0, 0, audioVisualizer.height);
-                    lowGradient.addColorStop(0, 'rgba(255, 121, 198, 1)'); // Pink for bass
-                    lowGradient.addColorStop(1, 'rgba(185, 142, 218, 0.8)');
+                    // Calculate band boundaries
+                    // For a 16384 FFT size at 44.1kHz, each bin is approximately 2.7Hz
+                    // So we need to map frequency bands to bin indices
+                    const nyquist = audioContext.sampleRate / 2;
+                    const getBinForFreq = (freq) => Math.floor(freq * audioAnalyser.frequencyBinCount / nyquist);
                     
-                    const midGradient = audioContext2.createLinearGradient(0, 0, 0, audioVisualizer.height);
-                    midGradient.addColorStop(0, 'rgba(155, 77, 202, 1)'); // Purple for mids
-                    midGradient.addColorStop(1, 'rgba(126, 61, 179, 0.8)');
+                    const bands = [
+                        {name: 'bass', range: [20, 150], color: 'rgba(255, 121, 198, 0.8)'},
+                        {name: 'lowMid', range: [150, 300], color: 'rgba(189, 147, 249, 0.8)'},
+                        {name: 'mid', range: [300, 1000], color: 'rgba(139, 233, 253, 0.8)'},
+                        {name: 'highMid', range: [1000, 3000], color: 'rgba(80, 250, 123, 0.8)'},
+                        {name: 'high', range: [3000, 8000], color: 'rgba(255, 184, 108, 0.8)'}
+                    ];
                     
-                    const highGradient = audioContext2.createLinearGradient(0, 0, 0, audioVisualizer.height);
-                    highGradient.addColorStop(0, 'rgba(80, 250, 123, 1)'); // Green for highs
-                    highGradient.addColorStop(1, 'rgba(80, 250, 123, 0.3)');
-                    
-                    // Use logarithmic scale for better frequency visualization
-                    const barCount = Math.min(audioData.length / 4, audioVisualizer.width / 3);
-                    const barWidth = audioVisualizer.width / barCount - 1;
-                    
-                    // Draw frequency bands with different colors
-                    for (let i = 0; i < barCount; i++) {
-                        // Use logarithmic mapping to emphasize lower frequencies
-                        const logFactor = Math.log10(1 + i) / Math.log10(barCount);
-                        const dataIndex = Math.floor(logFactor * audioData.length);
+                    // Draw each frequency band with its own color
+                    bands.forEach(band => {
+                        const startBin = getBinForFreq(band.range[0]);
+                        const endBin = getBinForFreq(band.range[1]);
+                        const binCount = endBin - startBin;
                         
-                        // Get value and enhance it a bit for visualization
-                        const value = Math.pow(audioData[dataIndex] / 255, 0.8) * 255;
-                        const barHeight = (value / 255) * (audioVisualizer.height * 0.7);
+                        if (binCount <= 0) return;
                         
-                        // Different colors for different frequency ranges
-                        if (dataIndex < audioData.length * 0.1) { // Bass (0-10%)
-                            audioContext2.fillStyle = lowGradient;
-                        } else if (dataIndex < audioData.length * 0.3) { // Mid (10-30%)
-                            audioContext2.fillStyle = midGradient;
-                        } else { // High (30%+)
-                            audioContext2.fillStyle = highGradient;
+                        // Set fill style
+                        audioContext2.fillStyle = band.color;
+                        
+                        // Compute bar width and spacing
+                        const totalWidthForBand = audioVisualizer.width * 0.8; // Leave some margin
+                        const barWidth = totalWidthForBand / binCount - 1;
+                        
+                        // Draw bars for this band
+                        for (let i = 0; i < binCount; i++) {
+                            const value = audioData[startBin + i];
+                            const normalized = value / 255; // Normalize to 0-1
+                            
+                            // Enhance low values
+                            const enhancedValue = Math.pow(normalized, 0.7); // Makes low values more visible
+                            const barHeight = enhancedValue * audioVisualizer.height * 0.7;
+                            
+                            // Calculate x position
+                            // We distribute each band proportionally across the width
+                            const x = (i / binCount) * totalWidthForBand + (audioVisualizer.width * 0.1);
+                            
+                            // Draw bar with rounded top corners
+                            audioContext2.beginPath();
+                            audioContext2.roundRect(
+                                x, 
+                                audioVisualizer.height - barHeight, 
+                                barWidth, 
+                                barHeight,
+                                [3, 3, 0, 0]
+                            );
+                            audioContext2.fill();
                         }
+                    });
+                    
+                    // Add energy level indicators per band
+                    if (audioBPMDetector && audioBPMDetector.bandEnergies) {
+                        let y = 15;
+                        audioContext2.textAlign = 'left';
+                        audioContext2.font = '10px sans-serif';
                         
-                        // Draw bar with rounded corners
-                        const x = i * (barWidth + 1);
-                        audioContext2.beginPath();
-                        audioContext2.roundRect(
-                            x, 
-                            audioVisualizer.height - barHeight, 
-                            barWidth, 
-                            barHeight,
-                            [2, 2, 0, 0]
-                        );
-                        audioContext2.fill();
+                        for (const bandName in audioBPMDetector.bandEnergies) {
+                            const band = audioBPMDetector.bandEnergies[bandName];
+                            
+                            if (band.buffer && band.buffer.length > 0) {
+                                // Get current energy
+                                const energy = band.buffer[band.buffer.length - 1].energy;
+                                
+                                // Draw label
+                                audioContext2.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                                audioContext2.fillText(bandName, 8, y);
+                                
+                                // Draw meter background
+                                audioContext2.fillStyle = 'rgba(255, 255, 255, 0.1)';
+                                audioContext2.fillRect(60, y - 8, 100, 10);
+                                
+                                // Find correct color based on band name
+                                let color = 'rgba(255, 255, 255, 0.8)';
+                                for (const b of bands) {
+                                    if (b.name === bandName) {
+                                        color = b.color;
+                                        break;
+                                    }
+                                }
+                                
+                                // Draw energy level
+                                audioContext2.fillStyle = color;
+                                audioContext2.fillRect(60, y - 8, energy * 100, 10);
+                                
+                                y += 20;
+                            }
+                        }
                     }
                     
-                    // Add BPM candidate visualization if available
-                    if (audioBPMDetector && audioBPMDetector.bpmCandidates && 
-                        audioBPMDetector.bpmCandidates.length > 0) {
+                    // Draw detected beats
+                    if (audioBPMDetector && audioBPMDetector.beatHistory) {
+                        const now = performance.now();
+                        const recentBeats = audioBPMDetector.beatHistory.filter(beat => now - beat.time < 2000);
                         
-                        // Show confidence level
-                        const confidenceLabel = audioBPMDetector.confidence > 0.7 ? 'High Confidence' :
-                                            audioBPMDetector.confidence > 0.4 ? 'Medium Confidence' : 
-                                            'Analyzing...';
-                        
-                        audioContext2.fillStyle = 'rgba(255, 255, 255, 0.8)';
-                        audioContext2.font = '12px sans-serif';
-                        audioContext2.textAlign = 'right';
-                        audioContext2.fillText(
-                            confidenceLabel, 
-                            audioVisualizer.width - 10, 
-                            20
-                        );
-                        
-                        // Draw confidence bar
-                        const barWidth = 100;
-                        const barHeight = 6;
-                        const barX = audioVisualizer.width - barWidth - 10;
-                        const barY = 30;
-                        
-                        // Background
-                        audioContext2.fillStyle = 'rgba(255, 255, 255, 0.2)';
-                        audioContext2.fillRect(barX, barY, barWidth, barHeight);
-                        
-                        // Fill based on confidence
-                        const fillColor = audioBPMDetector.confidence > 0.7 ? '#50fa7b' :
-                                        audioBPMDetector.confidence > 0.4 ? '#ffb86c' : 
-                                        '#ff5555';
-                        
-                        audioContext2.fillStyle = fillColor;
-                        audioContext2.fillRect(
-                            barX, 
-                            barY, 
-                            barWidth * audioBPMDetector.confidence, 
-                            barHeight
-                        );
-                        
-                        // Draw BPM candidates (shows alternatives being considered)
-                        if (audioBPMDetector.bpmCandidates.length > 0) {
-                            // Only show if we have some reasonable results
-                            const y = audioVisualizer.height - 90;
-                            const textX = 15;
+                        if (recentBeats.length > 0) {
+                            audioContext2.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                            audioContext2.lineWidth = 1;
                             
-                            // Label
-                            audioContext2.fillStyle = 'rgba(255, 255, 255, 0.7)';
-                            audioContext2.font = '12px sans-serif';
-                            audioContext2.textAlign = 'left';
-                            audioContext2.fillText('BPM Candidates:', textX, y - 5);
-                            
-                            // Get top candidates
-                            const candidates = audioBPMDetector.bpmCandidates.slice(0, 3);
-                            const totalCount = candidates.reduce((sum, c) => sum + c.count, 0);
-                            
-                            // Draw candidate bars with confidence
-                            candidates.forEach((candidate, index) => {
-                                const candidateY = y + (index * 25);
-                                const candidateWidth = 150;
-                                const candidateHeight = 18;
-                                const relativeStrength = candidate.count / totalCount;
+                            recentBeats.forEach(beat => {
+                                const age = now - beat.time;
+                                const alpha = 1 - (age / 2000); // Fade out over 2 seconds
                                 
-                                // Background
-                                audioContext2.fillStyle = 'rgba(255, 255, 255, 0.1)';
-                                audioContext2.fillRect(textX, candidateY, candidateWidth, candidateHeight);
-                                
-                                // Fill based on relative strength
-                                audioContext2.fillStyle = index === 0 ? '#50fa7b' : 
-                                                       index === 1 ? '#ffb86c' : 
-                                                       '#ff5555';
-                                
-                                audioContext2.fillRect(
-                                    textX, 
-                                    candidateY, 
-                                    candidateWidth * relativeStrength, 
-                                    candidateHeight
-                                );
-                                
-                                // Text
-                                audioContext2.fillStyle = 'rgba(0, 0, 0, 0.8)';
-                                audioContext2.font = 'bold 12px sans-serif';
-                                audioContext2.textAlign = 'left';
-                                audioContext2.fillText(
-                                    `${candidate.bpm} BPM`, 
-                                    textX + 5, 
-                                    candidateY + 13
-                                );
-                                
-                                // Show exact BPM and count on the right
-                                audioContext2.fillStyle = 'rgba(255, 255, 255, 0.7)';
-                                audioContext2.textAlign = 'right';
-                                audioContext2.fillText(
-                                    `${Math.round(candidate.exactAvg * 10) / 10} (×${candidate.count})`, 
-                                    textX + candidateWidth - 5, 
-                                    candidateY + 13
-                                );
+                                if (alpha > 0) {
+                                    // Draw vertical line at beat position
+                                    const x = audioVisualizer.width - (age / 2000 * audioVisualizer.width);
+                                    
+                                    audioContext2.beginPath();
+                                    audioContext2.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.7})`;
+                                    audioContext2.moveTo(x, 0);
+                                    audioContext2.lineTo(x, audioVisualizer.height);
+                                    audioContext2.stroke();
+                                    
+                                    // Draw dot for beat
+                                    audioContext2.beginPath();
+                                    audioContext2.fillStyle = `rgba(255, 121, 198, ${alpha})`;
+                                    audioContext2.arc(
+                                        x, 
+                                        audioVisualizer.height - 10, 
+                                        4 + (beat.strength * 4), 
+                                        0, 
+                                        Math.PI * 2
+                                    );
+                                    audioContext2.fill();
+                                }
                             });
+                        }
+                        
+                        // Show BPM grid lines if we have a tempo
+                        if (audioBPMDetector.currentTempo > 0) {
+                            const bpm = audioBPMDetector.currentTempo;
+                            const msPerBeat = 60000 / bpm;
                             
-                            // Add detected BPM visualization on top
-                            if (audioBpmDisplay.textContent !== '0') {
-                                const bpm = parseInt(audioBpmDisplay.textContent);
+                            // Draw grid lines for beats
+                            const now = performance.now();
+                            const phaseOffset = now % msPerBeat;
+                            
+                            // Calculate how many grid lines to show
+                            const numGridLines = Math.ceil(2000 / msPerBeat) + 1;
+                            
+                            for (let i = 0; i < numGridLines; i++) {
+                                const timeSinceBeat = phaseOffset + (i * msPerBeat);
+                                if (timeSinceBeat > 2000) continue;
                                 
-                                // Display the BPM prominently
-                                audioContext2.fillStyle = 'rgba(255, 255, 255, 0.9)';
-                                audioContext2.font = 'bold 24px sans-serif';
-                                audioContext2.textAlign = 'right';
-                                audioContext2.fillText(
-                                    `${bpm} BPM`, 
-                                    audioVisualizer.width - 15, 
-                                    80
-                                );
+                                const alpha = 1 - (timeSinceBeat / 2000);
+                                const x = audioVisualizer.width - (timeSinceBeat / 2000 * audioVisualizer.width);
+                                
+                                audioContext2.beginPath();
+                                audioContext2.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.3})`;
+                                audioContext2.setLineDash([2, 2]);
+                                audioContext2.moveTo(x, 0);
+                                audioContext2.lineTo(x, audioVisualizer.height);
+                                audioContext2.stroke();
+                                audioContext2.setLineDash([]);
                             }
+                            
+                            // Show BPM and confidence
+                            audioContext2.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                            audioContext2.font = '14px sans-serif';
+                            audioContext2.textAlign = 'right';
+                            audioContext2.fillText(
+                                `${bpm.toFixed(1)} BPM`, 
+                                audioVisualizer.width - 10, 
+                                20
+                            );
+                            
+                            // Confidence indicator
+                            const confidence = audioBPMDetector.confidence || 0;
+                            const confidenceBarWidth = 100;
+                            const confidenceBarHeight = 6;
+                            const barX = audioVisualizer.width - confidenceBarWidth - 10;
+                            const barY = 30;
+                            
+                            // Background
+                            audioContext2.fillStyle = 'rgba(255, 255, 255, 0.2)';
+                            audioContext2.fillRect(barX, barY, confidenceBarWidth, confidenceBarHeight);
+                            
+                            // Confidence level
+                            const fillColor = confidence > 0.7 ? '#50fa7b' :
+                                            confidence > 0.4 ? '#ffb86c' : 
+                                            '#ff5555';
+                            
+                            audioContext2.fillStyle = fillColor;
+                            audioContext2.fillRect(
+                                barX, 
+                                barY, 
+                                confidenceBarWidth * confidence, 
+                                confidenceBarHeight
+                            );
                         }
                     }
                 } catch (error) {
